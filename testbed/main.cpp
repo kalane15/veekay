@@ -9,37 +9,14 @@
 
 #include <imgui.h>
 #include <vulkan/vulkan_core.h>
+#include <utility.hpp>
+
+
 
 namespace {
 
-constexpr float camera_fov = 70.0f;
-constexpr float camera_near_plane = 0.01f;
-constexpr float camera_far_plane = 100.0f;
-
-struct Matrix {
-	float m[4][4];
-};
-
-struct Vector {
-	float x, y, z;
-};
-
-struct Vertex {
-	Vector position;
-	// NOTE: You can add more attributes
-};
-
 // NOTE: These variable will be available to shaders through push constant uniform
-struct ShaderConstants {
-	Matrix projection;
-	Matrix transform;
-	Vector color;
-};
 
-struct VulkanBuffer {
-	VkBuffer buffer;
-	VkDeviceMemory memory;
-};
 
 VkShaderModule vertex_shader_module;
 VkShaderModule fragment_shader_module;
@@ -55,92 +32,14 @@ float model_rotation;
 Vector model_color = {0.5f, 1.0f, 0.7f };
 bool model_spin = true;
 
-Matrix identity() {
-	Matrix result{};
-
-	result.m[0][0] = 1.0f;
-	result.m[1][1] = 1.0f;
-	result.m[2][2] = 1.0f;
-	result.m[3][3] = 1.0f;
-	
-	return result;
-}
-
-Matrix projection(float fov, float aspect_ratio, float near, float far) {
-	Matrix result{};
-
-	const float radians = fov * M_PI / 180.0f;
-	const float cot = 1.0f / tanf(radians / 2.0f);
-
-	result.m[0][0] = cot / aspect_ratio;
-	result.m[1][1] = cot;
-	result.m[2][3] = 1.0f;
-
-	result.m[2][2] = far / (far - near);
-	result.m[3][2] = (-near * far) / (far - near);
-
-	return result;
-}
-
-Matrix translation(Vector vector) {
-	Matrix result = identity();
-
-	result.m[3][0] = vector.x;
-	result.m[3][1] = vector.y;
-	result.m[3][2] = vector.z;
-
-	return result;
-}
-
-Matrix rotation(Vector axis, float angle) {
-	Matrix result{};
-
-	float length = sqrtf(axis.x * axis.x + axis.y * axis.y + axis.z * axis.z);
-
-	axis.x /= length;
-	axis.y /= length;
-	axis.z /= length;
-
-	float sina = sinf(angle);
-	float cosa = cosf(angle);
-	float cosv = 1.0f - cosa;
-
-	result.m[0][0] = (axis.x * axis.x * cosv) + cosa;
-	result.m[0][1] = (axis.x * axis.y * cosv) + (axis.z * sina);
-	result.m[0][2] = (axis.x * axis.z * cosv) - (axis.y * sina);
-
-	result.m[1][0] = (axis.y * axis.x * cosv) - (axis.z * sina);
-	result.m[1][1] = (axis.y * axis.y * cosv) + cosa;
-	result.m[1][2] = (axis.y * axis.z * cosv) + (axis.x * sina);
-
-	result.m[2][0] = (axis.z * axis.x * cosv) + (axis.y * sina);
-	result.m[2][1] = (axis.z * axis.y * cosv) - (axis.x * sina);
-	result.m[2][2] = (axis.z * axis.z * cosv) + cosa;
-
-	result.m[3][3] = 1.0f;
-
-	return result;
-}
-
-Matrix multiply(const Matrix& a, const Matrix& b) {
-	Matrix result{};
-
-	for (int j = 0; j < 4; j++) {
-		for (int i = 0; i < 4; i++) {
-			for (int k = 0; k < 4; k++) {
-				result.m[j][i] += a.m[j][k] * b.m[k][i];
-			}
-		}
-	}
-
-	return result;
-}
-
 // NOTE: Loads shader byte code from file
 // NOTE: Your shaders are compiled via CMake with this code too, look it up
 VkShaderModule loadShaderModule(const char* path) {
 	std::ifstream file(path, std::ios::binary | std::ios::ate);
+    file.seekg(0, std::ifstream::end);
 	size_t size = file.tellg();
+    int test = file.tellg();
+    auto a = size / sizeof(uint32_t);
 	std::vector<uint32_t> buffer(size / sizeof(uint32_t));
 	file.seekg(0);
 	file.read(reinterpret_cast<char*>(buffer.data()), size);
@@ -160,102 +59,7 @@ VkShaderModule loadShaderModule(const char* path) {
 
 	return result;
 }
-
-VulkanBuffer createBuffer(size_t size, void *data, VkBufferUsageFlags usage) {
-	VkDevice& device = veekay::app.vk_device;
-	VkPhysicalDevice& physical_device = veekay::app.vk_physical_device;
-	
-	VulkanBuffer result{};
-
-	{
-		// NOTE: We create a buffer of specific usage with specified size
-		VkBufferCreateInfo info{
-			.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-			.size = size,
-			.usage = usage,
-			.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-		};
-
-		if (vkCreateBuffer(device, &info, nullptr, &result.buffer) != VK_SUCCESS) {
-			std::cerr << "Failed to create Vulkan buffer\n";
-			return {};
-		}
-	}
-
-	// NOTE: Creating a buffer does not allocate memory,
-	//       only a buffer **object** was created.
-	//       So, we allocate memory for the buffer
-
-	{
-		// NOTE: Ask buffer about its memory requirements
-		VkMemoryRequirements requirements;
-		vkGetBufferMemoryRequirements(device, result.buffer, &requirements);
-
-		// NOTE: Ask GPU about types of memory it supports
-		VkPhysicalDeviceMemoryProperties properties;
-		vkGetPhysicalDeviceMemoryProperties(physical_device, &properties);
-
-		// NOTE: We want type of memory which is visible to both CPU and GPU
-		// NOTE: HOST is CPU, DEVICE is GPU; we are interested in "CPU" visible memory
-		// NOTE: COHERENT means that CPU cache will be invalidated upon mapping memory region
-		const VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-		                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-		// NOTE: Linear search through types of memory until
-		//       one type matches the requirements, thats the index of memory type
-		uint32_t index = UINT_MAX;
-		for (uint32_t i = 0; i < properties.memoryTypeCount; ++i) {
-			const VkMemoryType& type = properties.memoryTypes[i];
-
-			if ((requirements.memoryTypeBits & (1 << i)) &&
-			    (type.propertyFlags & flags) == flags) {
-				index = i;
-				break;
-			}
-		}
-
-		if (index == UINT_MAX) {
-			std::cerr << "Failed to find required memory type to allocate Vulkan buffer\n";
-			return {};
-		}
-
-		// NOTE: Allocate required memory amount in appropriate memory type
-		VkMemoryAllocateInfo info{
-			.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-			.allocationSize = requirements.size,
-			.memoryTypeIndex = index,
-		};
-
-		if (vkAllocateMemory(device, &info, nullptr, &result.memory) != VK_SUCCESS) {
-			std::cerr << "Failed to allocate Vulkan buffer memory\n";
-			return {};
-		}
-
-		// NOTE: Link allocated memory with a buffer
-		if (vkBindBufferMemory(device, result.buffer, result.memory, 0) != VK_SUCCESS) {
-			std::cerr << "Failed to bind Vulkan  buffer memory\n";
-			return {};
-		}
-
-		// NOTE: Get pointer to allocated memory
-		void* device_data;
-		vkMapMemory(device, result.memory, 0, requirements.size, 0, &device_data);
-
-		memcpy(device_data, data, size);
-
-		vkUnmapMemory(device, result.memory);
-	}
-
-	return result;
-}
-
-void destroyBuffer(const VulkanBuffer& buffer) {
-	VkDevice& device = veekay::app.vk_device;
-
-	vkFreeMemory(device, buffer.memory, nullptr);
-	vkDestroyBuffer(device, buffer.buffer, nullptr);
-}
-
+void post_init();
 void initialize() {
 	VkDevice& device = veekay::app.vk_device;
 	VkPhysicalDevice& physical_device = veekay::app.vk_physical_device;
@@ -308,16 +112,14 @@ void initialize() {
 				.format = VK_FORMAT_R32G32B32_SFLOAT, // NOTE: 3-component vector of floats
 				.offset = offsetof(Vertex, position), // NOTE: Offset of "position" field in a Vertex struct
 			},
+            {
+                    .location = 1,
+                    .binding = 0,
+                    .format = VK_FORMAT_R32G32B32_SFLOAT,
+                    .offset = offsetof(Vertex, color),
+            }
+        };
 			// NOTE: If you want more attributes per vertex, declare them here
-#if 0
-			{
-				.location = 1, // NOTE: Second attribute
-				.binding = 0,
-				.format = VK_FORMAT_XXX,
-				.offset = offset(Vertex, your_attribute),
-			},
-#endif
-		};
 
 		// NOTE: Bring 
 		VkPipelineVertexInputStateCreateInfo input_state_info{
@@ -461,54 +263,183 @@ void initialize() {
 	//  |   `--,   |
 	//  |       \  |
 	// (v3)------(v2)
-	Vertex vertices[] = {
-		{{-1.0f, -1.0f, 0.0f}},
-		{{1.0f, -1.0f, 0.0f}},
-		{{1.0f, 1.0f, 0.0f}},
-		{{-1.0f, 1.0f, 0.0f}},
-	};
-
-	uint32_t indices[] = { 0, 1, 2, 2, 3, 0 };
-
-	vertex_buffer = createBuffer(sizeof(vertices), vertices,
-	                             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-
-	index_buffer = createBuffer(sizeof(indices), indices,
-	                            VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+    post_init();
 }
 
+Figure square;
+Figure pyramid;
+Figure sphere;
+    Figure cube2;
 void shutdown() {
 	VkDevice& device = veekay::app.vk_device;
 
 	// NOTE: Destroy resources here, do not cause leaks in your program!
-	destroyBuffer(index_buffer);
-	destroyBuffer(vertex_buffer);
-
+    square.DestroyBuffers();
+    pyramid.DestroyBuffers();
+    sphere.DestroyBuffers();
+    cube2.DestroyBuffers();
 	vkDestroyPipeline(device, pipeline, nullptr);
 	vkDestroyPipelineLayout(device, pipeline_layout, nullptr);
 	vkDestroyShaderModule(device, fragment_shader_module, nullptr);
 	vkDestroyShaderModule(device, vertex_shader_module, nullptr);
 }
 
+
+Vertex vertices[] = {
+        {{-1.0f, -1.0f, 0.0f}},
+        {{1.0f, -1.0f, 0.0f}},
+        {{1.0f, 1.0f, 0.0f}},
+        {{-1.0f, 1.0f, 0.0f}},
+        {{-1.0f, -1.0f, 1.0f}},
+        {{1.0f, -1.0f, 1.0f}},
+        {{1.0f, 1.0f, 1.0f}},
+        {{-1.0f, 1.0f, 1.0f}},
+};
+uint32_t indices[] = {
+        0, 1, 2,  2, 3, 0,
+        4, 7, 6,  6, 5, 4,
+        0, 3, 7,  7, 4, 0,
+        1, 5, 6,  6, 2, 1,
+        0, 4, 5,  5, 1, 0,
+        3, 2, 6,  6, 7, 3
+};
+
+Vertex vertices2[] = {
+        {{0.0f, -1.0f, 0.0f}},
+        {{-1.0f, 1.0f, 0.0f}},
+        {{1.0f, 1.0f, 0.0f}},
+        {{0.0f, 1.0f, 1.0f}},
+};
+uint32_t indices2[] = {
+        0, 2, 1,
+        3, 0, 1,
+        2, 0, 3,
+        2, 3, 1
+};
+
+
+
+std::pair<std::vector<Vertex>, std::vector<uint32_t >> generateSphere(float radius, int sectors) {
+    std::vector<Vertex> vertexes_sphere = std::vector<Vertex>();
+    std::vector<uint32_t > indexes_sphere = std::vector<uint32_t >();
+    int stacks = sectors;
+    for (int i = 0; i <= stacks; ++i) {
+        float stackAngle = M_PI / 2 - (float)i * (M_PI / (float)stacks);
+        float xy = radius * cosf(stackAngle);
+        float z = radius * sinf(stackAngle);
+
+        for (int j = 0; j <= sectors; ++j) {
+            float sectorAngle = j * 2 * M_PI / (float)sectors;
+
+            float x = xy * cosf(sectorAngle);
+            float y = xy * sinf(sectorAngle);
+
+            Vertex vertex = {};
+            vertex.position = {x, y, z};
+
+            vertexes_sphere.push_back(vertex);
+        }
+    }
+
+    // Генерация индексов
+    for (int i = 0; i < stacks; ++i) {
+        int k1 = i * (sectors + 1);
+        int k2 = k1 + sectors + 1;
+
+        for (int j = 0; j < sectors; ++j, ++k1, ++k2) {
+            if (i != 0) {
+                indexes_sphere.push_back(k1);
+                indexes_sphere.push_back(k2);
+                indexes_sphere.push_back(k1 + 1);
+            }
+
+            if (i != (stacks - 1)) {
+                indexes_sphere.push_back(k1 + 1);
+                indexes_sphere.push_back(k2);
+                indexes_sphere.push_back(k2 + 1);
+            }
+        }
+    }
+
+    return {vertexes_sphere, indexes_sphere};
+}
+
+
+void post_init(){
+    pyramid = Figure(vertices2, 4, indices2, 12);
+    square = Figure(vertices, 8, indices, 36);
+    auto p = generateSphere(1.0, 20);
+    auto vertexes_sphere = p.first;
+    auto indexes_sphere = p.second;
+    sphere = Figure(vertexes_sphere, indexes_sphere);
+    cube2 = Figure(vertices, 8, indices, 36);
+}
+
+Vector square_position = {0.0, 0.0, 5.0};
+Vector sphere_position = {4.0, 0.0, 5.0};
+Vector pyramid_position = {-4.0, 0.0, 5.0};
+Vector cube_position = {0.0, 0.0, 3.0};
+
+Vector cube_color = {255.0, 255.0, 255.0};
+Vector sphere_color = {19, 115, 240};;
+Vector cube2_color = {1.0, 1.0, 0.0};;
+Vector pyramid_color1 = {255.0, 0.0, 0.0};
+Vector pyramid_color2 = {0.0, 255.0, 0.0};
+Vector pyramid_color3 = {0.0, 0.0, 0.0};
+Vector pyramid_color4 = {0.0, 0.0, 255.0};
+
 void update(double time) {
 	ImGui::Begin("Controls:");
-	ImGui::InputFloat3("Translation", reinterpret_cast<float*>(&model_position));
+	ImGui::InputFloat3("Translation square", reinterpret_cast<float*>(&square_position));
+	ImGui::InputFloat3("Translation sphere", reinterpret_cast<float*>(&sphere_position));
+	ImGui::InputFloat3("Translation pyramid", reinterpret_cast<float*>(&pyramid_position));
+	ImGui::InputFloat3("Translation cube2", reinterpret_cast<float*>(&cube_position));
+
+    ImGui::InputFloat3("Color cube", reinterpret_cast<float*>(&cube_color));
+    ImGui::InputFloat3("Color sphere", reinterpret_cast<float*>(&sphere_color));
+    ImGui::InputFloat3("Color cube2", reinterpret_cast<float*>(&cube2_color));
+    ImGui::InputFloat3("Color pyramid 1", reinterpret_cast<float*>(&pyramid_color1));
+    ImGui::InputFloat3("Color pyramid 2", reinterpret_cast<float*>(&pyramid_color2));
+    ImGui::InputFloat3("Color pyramid 3", reinterpret_cast<float*>(&pyramid_color3));
+    ImGui::InputFloat3("Color pyramid 4", reinterpret_cast<float*>(&pyramid_color4));
 	ImGui::SliderFloat("Rotation", &model_rotation, 0.0f, 2.0f * M_PI);
 	ImGui::Checkbox("Spin?", &model_spin);
 	// TODO: Your GUI stuff here
 	ImGui::End();
-
 	// NOTE: Animation code and other runtime variable updates go here
 	if (model_spin) {
 		model_rotation = float(time);
 	}
-
+    cube2.SetParent(&pyramid);
 	model_rotation = fmodf(model_rotation, 2.0f * M_PI);
+    square.SetLocalRotation({0.0, model_rotation, 0.0});
+    pyramid.local_rotation.y = model_rotation;
+    sphere.SetLocalRotation({0.0, model_rotation, 0.0});
+
+
+
+    square.SetLocalPosition(square_position);
+    sphere.SetLocalPosition(sphere_position);
+    pyramid.SetLocalPosition(pyramid_position);
+
+    square.SetColorRGB255ForAll(cube_color);
+    sphere.SetColorRGB255ForAll(sphere_color);
+    cube2.SetColorRGB255ForAll(cube2_color);
+
+    pyramid.SetColorVertex(0, pyramid_color1);
+    pyramid.SetColorVertex(1, pyramid_color2);
+    pyramid.SetColorVertex(2, pyramid_color3);
+    pyramid.SetColorVertex(3, pyramid_color4);
+//    pyramid.SetColorRGB255ForAll({255.0, 0.0, 0.0});
+
+    cube2.SetLocalPosition(cube_position);
+    cube2.SetLocalRotation({0.0, model_rotation * 6, 0.0});
 }
+
+
 
 void render(VkCommandBuffer cmd, VkFramebuffer framebuffer) {
 	vkResetCommandBuffer(cmd, 0);
-
 	{ // NOTE: Start recording rendering commands
 		VkCommandBufferBeginInfo info{
 			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -543,39 +474,11 @@ void render(VkCommandBuffer cmd, VkFramebuffer framebuffer) {
 
 	// TODO: Vulkan rendering code here
 	// NOTE: ShaderConstant updates, vkCmdXXX expected to be here
-	{
-		// NOTE: Use our new shiny graphics pipeline
-		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-
-		// NOTE: Use our quad vertex buffer
-		VkDeviceSize offset = 0;
-		vkCmdBindVertexBuffers(cmd, 0, 1, &vertex_buffer.buffer, &offset);
-
-		// NOTE: Use our quad index buffer
-		vkCmdBindIndexBuffer(cmd, index_buffer.buffer, offset, VK_INDEX_TYPE_UINT32);
-
-		// NOTE: Variables like model_XXX were declared globally
-		ShaderConstants constants{
-			.projection = projection(
-				camera_fov,
-				float(veekay::app.window_width) / float(veekay::app.window_height),
-				camera_near_plane, camera_far_plane),
-
-			.transform = multiply(rotation({0.0f, 1.0f, 0.0f}, model_rotation),
-			                      translation(model_position)),
-
-			.color = model_color,
-		};
-
-		// NOTE: Update constant memory with new shader constants
-		vkCmdPushConstants(cmd, pipeline_layout,
-		                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-		                   0, sizeof(ShaderConstants), &constants);
-
-		// NOTE: Draw 6 indices (3 vertices * 2 triangles), 1 group, no offsets
-		vkCmdDrawIndexed(cmd, 6, 1, 0, 0, 0);
-	}
+    square.Draw(cmd, pipeline, pipeline_layout);
+    pyramid.Draw(cmd, pipeline, pipeline_layout);
+    sphere.Draw(cmd, pipeline, pipeline_layout);
+    cube2.Draw(cmd, pipeline, pipeline_layout);
 
 	vkCmdEndRenderPass(cmd);
 	vkEndCommandBuffer(cmd);
