@@ -758,12 +758,12 @@ namespace {
     }
 
     veekay::vec3 sun_dir = {0.0, -1.0, 0};
-    veekay::vec3 test_point_light_position = {0.0, -3.0, 0.0};
+    veekay::vec3 test_point_light_position = {0.0, -4.0, 1.0f};
 
     void update(double time) {
         ImGui::Begin("Controls:");
         ImGui::InputFloat3("Sun direction", reinterpret_cast<float *>(&sun_dir));
-        ImGui::InputFloat3("Point light pos", reinterpret_cast<float *>(&test_point_light_position ));
+        ImGui::InputFloat3("Point light pos", reinterpret_cast<float *>(&test_point_light_position));
         ImGui::End();
 
         if (!ImGui::IsWindowHovered()) {

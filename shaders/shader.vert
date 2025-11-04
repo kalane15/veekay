@@ -25,11 +25,11 @@ layout (binding = 1, std140) uniform ModelUniforms {
 
 void main() {
 	vec4 position = model * vec4(v_position, 1.0f);
-	vec4 normal = model * vec4(v_normal, 0.0f);
+	mat3 normal_matrix = transpose(inverse(mat3(model)));
+    f_normal = normalize(normal_matrix * v_normal);
 
 	gl_Position = view_projection * position;
 
 	f_position = position.xyz;
-	f_normal = normal.xyz;
 	f_uv = v_uv;
 }
