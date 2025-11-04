@@ -25,6 +25,10 @@ namespace {
 
     struct SceneUniforms {
         veekay::mat4 view_projection;
+        veekay::vec3 view_position;
+        veekay::vec3 ambient_light_intensity; float _pad1;
+        veekay::vec3 sun_light_direction; float _pad2;
+        veekay::vec3 sun_light_color; float _pad3;
     };
 
     struct ModelUniforms {
@@ -59,8 +63,8 @@ namespace {
         constexpr static float default_near_plane = 0.01f;
         constexpr static float default_far_plane = 100.0f;
 
-        veekay::vec3 position = {};
-        veekay::vec3 rotation = {0, 10, 0};
+        veekay::vec3 position = {0, 0, 0};
+        veekay::vec3 rotation = {0, 0, 0};
 
         float fov = default_fov;
         float near_plane = default_near_plane;
@@ -78,7 +82,7 @@ namespace {
 // NOTE: Scene objects
     inline namespace {
         Camera camera{
-                .position = {0.0f, -0.5f, -3.0f}
+                .position = {0.0f, 0.0f, 0.0f}
         };
 
         std::vector<Model> models;
@@ -152,7 +156,7 @@ namespace {
         rot = rot * veekay::mat4::rotation({1, 0, 0}, -rotation.x);
 
 
-         return rot * tr;
+        return rot * tr;
 
     }
 
@@ -250,7 +254,7 @@ namespace {
                             .binding = 0,
                             .format = VK_FORMAT_R32G32_SFLOAT,
                             .offset = offsetof(Vertex, uv),
-                    },
+                    }
             };
 
             // NOTE: Describe inputs
@@ -616,8 +620,8 @@ namespace {
         models.emplace_back(Model{
                 .mesh = plane_mesh,
                 .transform = Transform{
-                    .position = {0.0f, 0.0f, 0.0}
-                    },
+                        .position = {0.0f, 0.0f, 0.0}
+                },
                 .albedo_color = veekay::vec3{1.0f, 1.0f, 1.0f}
         });
 
@@ -673,6 +677,7 @@ namespace {
 
     void update(double time) {
         ImGui::Begin("Controls:");
+        ImGui::
         ImGui::End();
 
         if (!ImGui::IsWindowHovered()) {
@@ -713,6 +718,10 @@ namespace {
         float aspect_ratio = float(veekay::app.window_width) / float(veekay::app.window_height);
         SceneUniforms scene_uniforms{
                 .view_projection = camera.view_projection(aspect_ratio),
+                .view_position = camera.position,
+                .ambient_light_intensity = {1, 1, 1},
+                .sun_light_direction = {0.0, 1.0, 0.0},
+                .sun_light_color = {1, 1, 0},
         };
 
         std::vector<ModelUniforms> model_uniforms(models.size());

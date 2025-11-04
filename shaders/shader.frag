@@ -6,11 +6,37 @@ layout (location = 2) in vec2 f_uv;
 
 layout (location = 0) out vec4 final_color;
 
+layout (binding = 0, std140) uniform SceneUniforms {
+    mat4 view_projection;
+    vec3 view_position;
+    vec3 ambient_light_intensity;
+    vec3 sun_light_direction;
+    vec3 sun_light_color;
+};
+
 layout (binding = 1, std140) uniform ModelUniforms {
-	mat4 model;
-	vec3 albedo_color;
+    mat4 model;
+    vec3 albedo_color;
+    vec3 specular_color;
+    float shininess;
 };
 
 void main() {
-	final_color = vec4(albedo_color, 1.0f);
+    vec3 normal = normalize(f_normal);
+
+    vec3 view_dir = normalize(view_position - f_position);
+
+    vec3 half_vector = normalize(view_dir - sun_light_direction);
+
+    vec3 sun_light_dir = normalize(sun_light_direction);
+
+    vec3 sun_diffuse = albedo_color * max(0.0f, dot(normal, -sun_light_dir));
+
+    vec3 sun_specular = specular_color * pow(max(0.0f, dot(normal, half_vector)), shininess);
+
+    vec3 sun_light_intensity = sun_light_color * (sun_diffuse + sun_specular);
+
+    vec3 color = ambient_light_intensity + sun_light_intensity;
+
+    final_color = vec4(color, 1.0f);
 }
