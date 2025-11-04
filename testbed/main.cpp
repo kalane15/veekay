@@ -25,7 +25,7 @@ namespace {
 
     struct SceneUniforms {
         veekay::mat4 view_projection;
-        veekay::vec3 view_position;
+        veekay::vec3 view_position; float _pad0;
         veekay::vec3 ambient_light_intensity; float _pad1;
         veekay::vec3 sun_light_direction; float _pad2;
         veekay::vec3 sun_light_color; float _pad3;
@@ -33,8 +33,9 @@ namespace {
 
     struct ModelUniforms {
         veekay::mat4 model;
-        veekay::vec3 albedo_color;
-        float _pad0;
+        veekay::vec3 albedo_color; float _pad0;
+        veekay::vec3 specular_color; float _pad2;
+        float shininess;
     };
 
     struct Mesh {
@@ -56,6 +57,8 @@ namespace {
         Mesh mesh;
         Transform transform;
         veekay::vec3 albedo_color;
+        veekay::vec3 specular_color;
+        float shininess;
     };
 
     struct Camera {
@@ -674,10 +677,10 @@ namespace {
         vkDestroyShaderModule(device, fragment_shader_module, nullptr);
         vkDestroyShaderModule(device, vertex_shader_module, nullptr);
     }
-
+veekay::vec3 sun_dir = {0.0, -1.0, 0};
     void update(double time) {
         ImGui::Begin("Controls:");
-        ImGui::
+        ImGui::InputFloat3("Sun direction", reinterpret_cast<float*>(&sun_dir));
         ImGui::End();
 
         if (!ImGui::IsWindowHovered()) {
@@ -719,8 +722,8 @@ namespace {
         SceneUniforms scene_uniforms{
                 .view_projection = camera.view_projection(aspect_ratio),
                 .view_position = camera.position,
-                .ambient_light_intensity = {1, 1, 1},
-                .sun_light_direction = {0.0, 1.0, 0.0},
+                .ambient_light_intensity = {0, 0, 0},
+                .sun_light_direction = sun_dir,
                 .sun_light_color = {1, 1, 0},
         };
 
@@ -731,6 +734,8 @@ namespace {
 
             uniforms.model = model.transform.matrix();
             uniforms.albedo_color = model.albedo_color;
+            uniforms.specular_color = model.specular_color;
+            uniforms.shininess = model.shininess;
         }
 
         *(SceneUniforms *) scene_uniforms_buffer->mapped_region = scene_uniforms;

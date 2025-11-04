@@ -24,17 +24,11 @@ layout (binding = 1, std140) uniform ModelUniforms {
 void main() {
     vec3 normal = normalize(f_normal);
 
-    vec3 view_dir = normalize(view_position - f_position);
-
-    vec3 half_vector = normalize(view_dir - sun_light_direction);
-
     vec3 sun_light_dir = normalize(sun_light_direction);
 
-    vec3 sun_diffuse = albedo_color * max(0.0f, dot(normal, -sun_light_dir));
+    float sun_diffuse = max(0.0f, dot(normal, sun_light_dir));
 
-    vec3 sun_specular = specular_color * pow(max(0.0f, dot(normal, half_vector)), shininess);
-
-    vec3 sun_light_intensity = sun_light_color * (sun_diffuse + sun_specular);
+    vec3 sun_light_intensity = sun_light_color * (sun_diffuse);
 
     vec3 color = ambient_light_intensity + sun_light_intensity;
 
