@@ -13,6 +13,7 @@ layout (binding = 0, std140) uniform SceneUniforms {
     vec3 ambient_light_intensity;
     vec3 sun_light_direction;
     vec3 sun_light_color;
+   	uint point_light_count;
 };
 
 layout (binding = 1, std140) uniform ModelUniforms {
@@ -24,7 +25,7 @@ layout (binding = 1, std140) uniform ModelUniforms {
 
 void main() {
 	vec4 position = model * vec4(v_position, 1.0f);
-	vec4 normal = vec4(v_normal, 0.0f);
+	vec4 normal = model * vec4(v_normal, 0.0f);
 
 	gl_Position = view_projection * position;
 
