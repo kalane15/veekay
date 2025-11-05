@@ -9,14 +9,10 @@ layout(location = 0) out vec4 final_color;
 layout(binding = 0, std140) uniform SceneUniforms {
     mat4 view_projection;
     vec3 view_position;
-    float _pad0;
     vec3 ambient_light_intensity;
-    float _pad1;
     vec3 sun_light_direction;
-    float _pad2;
     vec3 sun_light_color;
     uint point_light_count;
-    float _pad3[3];
 };
 
 layout(binding = 1, std140) uniform ModelUniforms {
@@ -28,8 +24,8 @@ layout(binding = 1, std140) uniform ModelUniforms {
 
 struct PointLight {
     vec3 position;
-    float radius;
     vec3 color;
+    float radius;
 };
 
 layout(binding = 2, std430) readonly buffer PointLights {
@@ -51,11 +47,18 @@ void main() {
     float sun_spec_factor = max(dot(normal, sun_half), 0.0);
     vec3 sun_specular = specular_color * pow(sun_spec_factor, shininess);
 
-    vec3 color = ambient_light_intensity + sun_light_color * (sun_diffuse + sun_specular);
+    vec3 sun_color = ambient_light_intensity + sun_light_color * (sun_diffuse + sun_specular);
 
     // ------------------------------
     // Точечные источники
     // ------------------------------
+
+//    if (point_light_count == 1){
+//        final_color = vec4(1.0, 1.0, 1.0, 1.0);
+//        return;
+//    }
+
+    vec3 point_light_color = vec3(0.0, 0.0, 0.0);
     for (uint i = 0; i < point_light_count; ++i) {
         PointLight light = point_lights[i];
 
@@ -74,7 +77,19 @@ void main() {
         float spec_factor = max(dot(normal, half_vec), 0.0);
         vec3 specular = specular_color * pow(spec_factor, shininess);
 
-        color += attenuation * (diffuse + specular);
+        point_light_color += attenuation * (diffuse + specular);
+    }
+    vec3 color = sun_color + point_light_color;
+
+
+    if (color.x > 1.0){
+        color.x = 1.0;
+    }
+    if (color.y > 1.0){
+        color.y = 1.0;
+    }
+    if (color.z > 1.0){
+        color.z = 1.0;
     }
 
     final_color = vec4(color, 1.0);

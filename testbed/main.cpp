@@ -25,17 +25,16 @@ namespace {
     };
 
     struct SceneUniforms {
-        veekay::mat4 view_projection;
-        veekay::vec3 view_position;
-        float _pad0;
-        veekay::vec3 ambient_light_intensity;
-        float _pad1;
-        veekay::vec3 sun_light_direction;
-        float _pad2;
-        veekay::vec3 sun_light_color;
-
-        uint32_t point_lights_count;
-        float _pad5[3];
+        veekay::mat4 view_projection;           // 64 bytes (align 16)
+        veekay::vec3 view_position;             // 12 bytes
+        float _pad0;                            // 4 bytes (total 16)
+        veekay::vec3 ambient_light_intensity;   // 12 bytes
+        float _pad1;                            // 4 bytes (total 16)
+        veekay::vec3 sun_light_direction;       // 12 bytes
+        float _pad2;                            // 4 bytes (total 16)
+        veekay::vec3 sun_light_color;           // 12 bytes
+        uint32_t point_lights_count;            // 4 bytes (align 4)
+        float _pad4[3];                         // 12 bytes (total 16)
     };
 
     struct ModelUniforms {
@@ -94,9 +93,9 @@ namespace {
 
     struct PointLight {
         veekay::vec3 position;
-        float radius;
+        float _pad1;
         veekay::vec3 color;
-        float _pad0;
+        float radius;
     };
 
     struct SpotLight {
@@ -504,7 +503,7 @@ namespace {
         }
 
         scene_uniforms_buffer = new veekay::graphics::Buffer(
-                sizeof(SceneUniforms),
+                veekay::graphics::Buffer::structureAlignment(sizeof(SceneUniforms)),
                 nullptr,
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
 
@@ -725,8 +724,8 @@ namespace {
 
         point_lights.emplace_back(PointLight{
                 .position = {0.0, 0.0, 0.0},
-                .radius = 1.0f,
                 .color = {1.0, 1.0, 1.0},
+                .radius = 100.0f,
         });
     }
 
