@@ -693,7 +693,9 @@ namespace {
                 .transform = Transform{
                         .position = {0.0f, 0.0f, 0.0}
                 },
-                .albedo_color = veekay::vec3{1.0f, 1.0f, 1.0f}
+                .albedo_color = veekay::vec3{1.0f, 1.0f, 1.0f},
+                .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
+                .shininess= 20.0f,
         });
 
         models.emplace_back(Model{
@@ -718,8 +720,8 @@ namespace {
                         .position = {0.0f, -3.6f, 1.0f},
                 },
                 .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
-//                .specular_color = {1.0, 0.0, 0.0},
-//                .shininess= 100.0f,
+                .specular_color = veekay::vec3{0.0f, 0.0f, 1.0f},
+                .shininess= 20.0f,
         });
 
         point_lights.emplace_back(PointLight{

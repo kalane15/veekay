@@ -75,7 +75,7 @@ void main() {
         // Зеркальное освещение (Blinn-Phong)
         vec3 half_vec = normalize(light_dir + view_dir);
         float spec_factor = max(dot(normal, half_vec), 0.0);
-        vec3 specular = specular_color * max(0.0, pow(spec_factor, shininess));
+        vec3 specular = light.color * specular_color * max(0.0, pow(spec_factor, shininess));
 
         point_light_color += attenuation * (diffuse + specular);
     }
