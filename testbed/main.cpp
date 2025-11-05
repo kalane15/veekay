@@ -725,7 +725,7 @@ namespace {
         point_lights.emplace_back(PointLight{
                 .position = {0.0, 0.0, 0.0},
                 .color = {1.0, 1.0, 1.0},
-                .radius = 100.0f,
+                .radius = 10.0f,
         });
     }
 

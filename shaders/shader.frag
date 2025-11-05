@@ -45,7 +45,7 @@ void main() {
 
     vec3 sun_half = normalize(view_dir + sun_dir);
     float sun_spec_factor = max(dot(normal, sun_half), 0.0);
-    vec3 sun_specular = specular_color * pow(sun_spec_factor, shininess);
+    vec3 sun_specular = specular_color * max(0.0, pow(sun_spec_factor, shininess));
 
     vec3 sun_color = ambient_light_intensity + sun_light_color * (sun_diffuse + sun_specular);
 
@@ -70,27 +70,18 @@ void main() {
 
         // Рассеянное освещение
         float diffuse_factor = max(dot(normal, light_dir), 0.0);
-        vec3 diffuse = light.color * diffuse_factor;
+        vec3 diffuse = light.color * diffuse_factor * albedo_color;
 
         // Зеркальное освещение (Blinn-Phong)
         vec3 half_vec = normalize(light_dir + view_dir);
         float spec_factor = max(dot(normal, half_vec), 0.0);
-        vec3 specular = specular_color * pow(spec_factor, shininess);
+        vec3 specular = specular_color * max(0.0, pow(spec_factor, shininess));
 
         point_light_color += attenuation * (diffuse + specular);
     }
     vec3 color = sun_color + point_light_color;
 
 
-    if (color.x > 1.0){
-        color.x = 1.0;
-    }
-    if (color.y > 1.0){
-        color.y = 1.0;
-    }
-    if (color.z > 1.0){
-        color.z = 1.0;
-    }
 
     final_color = vec4(color, 1.0);
 }
