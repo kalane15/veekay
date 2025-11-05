@@ -159,38 +159,56 @@ namespace {
 
     veekay::mat4 Camera::view() const {
         if (camera.useLookAt) {
-            auto pitch = rotation.x;
-            auto yaw = rotation.y;
-
-            veekay::vec3 front = {0, 0, 0};
-            front.x = cos(pitch) * sin(yaw);
-            front.y = sin(pitch);
-            front.z = -cos(pitch) * cos(yaw);
-
+            // Рассчитываем направление взгляда камеры для LHCS
+            // Направление вперед в левосторонней системе координат
+            veekay::vec3 front;
+            front.x = cos(rotation.y) * cos(rotation.x);
+            front.y = sin(rotation.x);
+            front.z = sin(rotation.y) * cos(rotation.x);
             front = veekay::vec3::normalized(front);
 
-            auto right = veekay::vec3::cross(front, {0, 1, 0});
-            auto up = veekay::vec3::cross(right, front);
+            veekay::vec3 worldUp = {0, 1, 0};  // Ось Y направлена вниз (для LHCS)
+            veekay::vec3 right = veekay::vec3::normalized(veekay::vec3::cross(worldUp, front));
+            veekay::vec3 up = veekay::vec3::normalized(veekay::vec3::cross(front, right));      // Пересчитываем up
 
-            veekay::mat4 lookAt = veekay::mat4::identity();
-            lookAt[0] = {right.x, right.y, right.z, 0};
-            lookAt[1] = {up.x, up.y, up.z, 0};
-            lookAt[2] = {front.x, front.y, front.z, 0};
-            auto t = lookAt * veekay::mat4::translation(-position);
+            // Строим матрицу ориентации (view matrix)
+            veekay::mat4 view = veekay::mat4::identity();
 
-            return t;
+            view[0][0] = right.x;
+            view[1][0] = right.y;
+            view[2][0] = right.z;
+
+            view[0][1] = up.x;
+            view[1][1] = up.y;
+            view[2][1] = up.z;
+
+            view[0][2] = -front.x;
+            view[1][2] = -front.y;
+            view[2][2] = -front.z;
+
+            view[0][3] = 0.0f;
+            view[1][3] = 0.0f;
+            view[2][3] = 0.0f;
+            view[3][3] = 1.0f;
+
+            // Применяем трансляцию (перемещаем камеру в нужную позицию)
+            auto lookAt = view * veekay::mat4::translation(-position);
+
+            return lookAt;
         }
 
+
+
+        // В случае обычной трансляции и вращения
         auto tr = veekay::mat4::translation(-position);
         veekay::mat4 rot = veekay::mat4::identity();
         rot = rot * veekay::mat4::rotation({0, 0, 1}, -rotation.z);
         rot = rot * veekay::mat4::rotation({0, 1, 0}, -rotation.y);
         rot = rot * veekay::mat4::rotation({1, 0, 0}, -rotation.x);
 
-
         return rot * tr;
-
     }
+
 
     veekay::mat4 Camera::view_projection(float aspect_ratio) const {
         auto projection = veekay::mat4::projection(fov, aspect_ratio, near_plane, far_plane);
@@ -760,12 +778,17 @@ namespace {
 
     veekay::vec3 sun_dir = {0.0, -1.0, 0};
     veekay::vec3 test_point_light_position = {0.0, -4.0, 1.0f};
+    int tmp = 0;
 
     void update(double time) {
         ImGui::Begin("Controls:");
         ImGui::InputFloat3("Sun direction", reinterpret_cast<float *>(&sun_dir));
         ImGui::InputFloat3("Point light pos", reinterpret_cast<float *>(&test_point_light_position));
+
+        ImGui::InputInt("Use lookAt?", &tmp);
         ImGui::End();
+
+        camera.useLookAt = tmp > 0;
 
         if (!ImGui::IsWindowHovered()) {
             using namespace veekay::input;
