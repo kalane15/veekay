@@ -34,6 +34,7 @@ namespace {
         float _pad2;                            // 4 bytes (total 16)
         veekay::vec3 sun_light_color;           // 12 bytes
         uint32_t point_lights_count;            // 4 bytes (align 4)
+        uint32_t spot_lights_count;
         float _pad4[3];                         // 12 bytes (total 16)
     };
 
@@ -107,8 +108,7 @@ namespace {
         float radius;
         veekay::vec3 direction;
         float angle; // Косинус угла
-        veekay::vec3 color;
-        float _pad0;
+        veekay::vec3 color; float _pad0;
     };
 
 // NOTE: Scene objects
@@ -426,6 +426,12 @@ namespace {
                                 .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                                 .descriptorCount = 1,
                                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+                        },
+                        {
+                                .binding = 3,
+                                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                .descriptorCount = 1,
+                                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
                         }
 
                 };
@@ -592,6 +598,13 @@ namespace {
                             .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                             .pBufferInfo = &buffer_infos[2],
                     },
+                    {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                            .dstSet = descriptor_set,
+                            .dstBinding = 2,
+                            .descriptorCount = 1,
+                            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                            .pBufferInfo = &buffer_infos[3],
+                    },
 
             };
 
@@ -725,6 +738,12 @@ namespace {
                 .color = {1.0, 1.0, 1.0},
                 .radius = 10.0f,
         });
+
+        spot_lights.emplace_back(SpotLight{
+                .position = {0.0, 0.0, 0.0},
+                .radius = 10.0f,
+                .color = {1.0, 1.0, 1.0},
+        });
     }
 
 // NOTE: Destroy resources here, do not cause leaks in your program!
@@ -756,20 +775,27 @@ namespace {
 
     veekay::vec3 sun_dir = {0.0, -1.0, 0};
     veekay::vec3 test_point_light_position = {0.0, -4.0, 1.0f};
+
+    veekay::vec3 spot_light_pos = {0.0, -4.0, 1.0f};
+    float spot_light_angle = 0.0;
+
     int tmp = 0;
     veekay::vec3 front = {0.0, 0.0, 1.0};
     void update(double time) {
-        ImGui::Begin("Controls:");
+        ImGui::Begin("General lightning:");
         ImGui::InputFloat3("Sun direction", reinterpret_cast<float *>(&sun_dir));
-        ImGui::InputFloat3("Point light pos", reinterpret_cast<float *>(&test_point_light_position));
-        ImGui::InputFloat3("Canera rot", reinterpret_cast<float *>(&camera.rotation));
-        ImGui::InputFloat3("Canera pos", reinterpret_cast<float *>(&camera.position));
-        ImGui::InputFloat3("front", reinterpret_cast<float *>(&camera.forward));
-        ImGui::InputFloat3("right", reinterpret_cast<float *>(&camera.right));
-        ImGui::InputFloat3("up", reinterpret_cast<float *>(&camera.up));
 
+        ImGui::InputFloat3("Point light pos", reinterpret_cast<float *>(&test_point_light_position));
+
+        ImGui::InputFloat3("Camera rot", reinterpret_cast<float *>(&camera.rotation));
+        ImGui::InputFloat3("Camera pos", reinterpret_cast<float *>(&camera.position));
         ImGui::InputInt("Use lookAt?", &tmp);
+
+        ImGui::InputFloat3("Spot light pos", reinterpret_cast<float *>(&spot_light_pos));
+        ImGui::InputFloat("Angle", reinterpret_cast<float *>(&spot_light_angle));
         ImGui::End();
+
+
 
         camera.useLookAt = tmp > 0;
         camera.forward.x = sin(camera.rotation.y) * cos(camera.rotation.x);
@@ -823,9 +849,12 @@ namespace {
         };
 
         scene_uniforms.point_lights_count = point_lights.size();
-//        scene_uniforms.spot_lights_count = spot_lights.size();
+        scene_uniforms.spot_lights_count = spot_lights.size();
 
         point_lights[0].position = test_point_light_position;
+
+        spot_lights[0].position = spot_light_pos;
+        spot_lights[0].angle = spot_light_angle;
 
         std::vector<ModelUniforms> model_uniforms(models.size());
         for (size_t i = 0, n = models.size(); i < n; ++i) {
@@ -863,8 +892,15 @@ namespace {
             }
         }
 
-        for (size_t i = 0; i < spot_lights.size(); ++i) {
+        {
+            const size_t alignment =
+                    veekay::graphics::Buffer::structureAlignment(sizeof(SpotLight));
 
+            for (size_t i = 0; i < spot_lights.size(); ++i) {
+                const auto &light = spot_lights[i];
+                char *const pointer = static_cast<char *>(spotlight_buffer->mapped_region) + i * alignment;
+                *reinterpret_cast<SpotLight*>(pointer) = light;
+            }
         }
     }
 
