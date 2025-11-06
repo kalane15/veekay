@@ -600,7 +600,7 @@ namespace {
                     },
                     {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                             .dstSet = descriptor_set,
-                            .dstBinding = 2,
+                            .dstBinding = 3,
                             .descriptorCount = 1,
                             .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                             .pBufferInfo = &buffer_infos[3],
@@ -702,7 +702,7 @@ namespace {
                 .transform = Transform{
                         .position = {0.0f, 0.0f, 0.0}
                 },
-                .albedo_color = veekay::vec3{1.0f, 1.0f, 1.0f},
+                .albedo_color = veekay::vec3{0.8f, 0.6f, 0.2f},
                 .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
                 .shininess= 20.0f,
         });
@@ -712,7 +712,7 @@ namespace {
                 .transform = Transform{
                         .position = {-2.0f, -0.6f, -1.5f},
                 },
-                .albedo_color = veekay::vec3{1.0f, 0.0f, 0.0f}
+                .albedo_color = veekay::vec3{1.0f, 0.0f, 0.0f},
         });
 
         models.emplace_back(Model{
@@ -729,8 +729,7 @@ namespace {
                         .position = {0.0f, -3.6f, 1.0f},
                 },
                 .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
-                .specular_color = veekay::vec3{0.0f, 0.0f, 1.0f},
-                .shininess= 20.0f,
+
         });
 
         point_lights.emplace_back(PointLight{
