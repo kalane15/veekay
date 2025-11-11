@@ -25,17 +25,17 @@ namespace {
     };
 
     struct SceneUniforms {
-        veekay::mat4 view_projection;           // 64 bytes (align 16)
-        veekay::vec3 view_position;             // 12 bytes
-        float _pad0;                            // 4 bytes (total 16)
-        veekay::vec3 ambient_light_intensity;   // 12 bytes
-        float _pad1;                            // 4 bytes (total 16)
-        veekay::vec3 sun_light_direction;       // 12 bytes
-        float _pad2;                            // 4 bytes (total 16)
-        veekay::vec3 sun_light_color;           // 12 bytes
-        uint32_t point_lights_count;            // 4 bytes (align 4)
+        veekay::mat4 view_projection;
+        veekay::vec3 view_position;
+        float _pad0;
+        veekay::vec3 ambient_light_intensity;
+        float _pad1;
+        veekay::vec3 sun_light_direction;
+        float _pad2;
+        veekay::vec3 sun_light_color;
+        uint32_t point_lights_count;
         uint32_t spot_lights_count;
-        float _pad4[3];                         // 12 bytes (total 16)
+        float _pad4[3];
     };
 
     struct ModelUniforms {
@@ -169,15 +169,12 @@ namespace {
         view[1] = {right.y, up.y, forward.y, 0};
         view[2] = {right.z, up.z, forward.z, 0};
 
-        // Применяем трансляцию (перемещаем камеру в нужную позицию)
         auto lookAt = veekay::mat4::translation(-position) * view;
-
 
         if (camera.useLookAt) {
             return lookAt;
         }
 
-        // В случае обычной трансляции и вращения
         auto tr = veekay::mat4::translation(-position);
         auto rot_x = veekay::mat4::rotation({1, 0, 0}, -rotation.x);
         auto rot_y = veekay::mat4::rotation({0, 1, 0}, -rotation.y);
@@ -804,9 +801,10 @@ namespace {
         camera.forward.x = sin(camera.rotation.y) * cos(camera.rotation.x);
         camera.forward.y = -sin(camera.rotation.x);
         camera.forward.z = cos(camera.rotation.y) * cos(camera.rotation.x);
+        camera.forward = veekay::vec3::normalized(camera.forward);
 
-        camera.right = veekay::vec3::cross(camera.forward, {0.0, -1.0, 0.0});
-        camera.up = -veekay::vec3::cross(camera.right, camera.forward);
+        camera.right = veekay::vec3::normalized(veekay::vec3::cross(camera.forward, {0.0, -1.0, 0.0}));
+        camera.up = -veekay::vec3::normalized(veekay::vec3::cross(camera.right, camera.forward));
 
         if (!ImGui::IsWindowHovered()) {
             using namespace veekay::input;
