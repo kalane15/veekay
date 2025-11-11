@@ -87,15 +87,38 @@ void main() {
         point_light_color += attenuation * (diffuse + specular);
     }
 
+    vec3 spot_light_color = vec3(0.0, 0.0, 0.0);
     for (uint i = 0; i < spot_light_count; ++i) {
             SpotLight light = spot_lights[i];
+            vec3 light_dir = normalize(light.position - f_position);
+            float distance = length(light.position - f_position);
+            float attenuation = light.intensity / (distance * distance);
 
+            // Рассеянное освещение
+            float diffuse_factor = max(dot(normal, light_dir), 0.0);
+            vec3 diffuse = light.color * diffuse_factor * albedo_color;
+
+            // Зеркальное освещение
+            vec3 half_vec = normalize(light_dir + view_dir);
+            float spec_factor = max(dot(normal, half_vec), 0.0);
+            vec3 specular = light.color * specular_color * max(0.0, pow(spec_factor, shininess));
+
+            vec3 res_color = attenuation * (diffuse + specular);
+
+            float theta = dot(light_dir, normalize(light.direction));
+
+            float angle_multiplier = 0.0;
+            if (theta > light.angle){
+                angle_multiplier = 1.0;
+            }
+
+            spot_light_color += res_color * angle_multiplier;
         }
 
 
 
 
 
-    vec3 color = sun_color + point_light_color + ambient_light_intensity;
+    vec3 color = sun_color + point_light_color + ambient_light_intensity + spot_light_color;
     final_color = vec4(color, 1.0);
 }

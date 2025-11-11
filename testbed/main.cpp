@@ -741,8 +741,9 @@ namespace {
         spot_lights.emplace_back(SpotLight{
                 .position = {1.0, 1.0, 1.0},
                 .intensity = 10.0f,
-                .angle = 10,
-                .color = {1.0, 1.0, 1.0},
+                .direction = {0.0, 0.0, 1.0},
+                .angle = 0.8660254,
+                .color = {0.0, 1.0, 1.0},
         });
     }
 
@@ -776,8 +777,9 @@ namespace {
     veekay::vec3 sun_dir = {0.0, -1.0, 0};
     veekay::vec3 test_point_light_position = {0.0, -4.0, 1.0f};
 
-    veekay::vec3 spot_light_pos = {0.0, -4.0, 1.0f};
-    float spot_light_angle = 0.0;
+    veekay::vec3 spot_light_pos = test_point_light_position;
+    veekay::vec3 spot_light_dir = {0.0, 0.0, 1.0};
+    float spot_light_angle = 0.8660254;
 
     int tmp = 0;
     veekay::vec3 front = {0.0, 0.0, 1.0};
@@ -794,6 +796,7 @@ namespace {
 
         ImGui::InputFloat3("Spot light pos", reinterpret_cast<float *>(&spot_light_pos));
         ImGui::InputFloat("Angle", reinterpret_cast<float *>(&spot_light_angle));
+        ImGui::InputFloat3("Spot light direction", reinterpret_cast<float *>(&spot_light_dir));
         ImGui::End();
 
 
@@ -853,8 +856,9 @@ namespace {
 
         point_lights[0].position = test_point_light_position;
 
-//        spot_lights[0].position = spot_light_pos;
-//        spot_lights[0].angle = spot_light_angle;
+        spot_lights[0].position = spot_light_pos;
+        spot_lights[0].angle = spot_light_angle;
+        spot_lights[0].direction = spot_light_dir;
 
         std::vector<ModelUniforms> model_uniforms(models.size());
         for (size_t i = 0, n = models.size(); i < n; ++i) {
