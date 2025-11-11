@@ -844,7 +844,7 @@ namespace {
                 .view_position = camera.position,
                 .ambient_light_intensity = {0.00, 0.0, 0.00},
                 .sun_light_direction = sun_dir,
-                .sun_light_color = {1, 1, 1},
+                .sun_light_color = {0.5, 0.5, 0.5},
         };
 
         scene_uniforms.point_lights_count = point_lights.size();
