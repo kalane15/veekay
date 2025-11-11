@@ -26,12 +26,12 @@ layout(binding = 1, std140) uniform ModelUniforms {
 struct PointLight {
     vec3 position;
     vec3 color;
-    float radius;
+    float intensity;
 };
 
 struct SpotLight {
 	vec3 position;
-	float radius;
+	float intensity;
 	vec3 direction;
 	float angle;
     vec3 color;
@@ -73,7 +73,7 @@ void main() {
 
         vec3 light_dir = normalize(light.position - f_position);
         float distance = length(light.position - f_position);
-        float attenuation = light.radius / (distance * distance);
+        float attenuation = light.intensity / (distance * distance);
 
         // Рассеянное освещение
         float diffuse_factor = max(dot(normal, light_dir), 0.0);
@@ -86,6 +86,11 @@ void main() {
 
         point_light_color += attenuation * (diffuse + specular);
     }
+
+    for (uint i = 0; i < spot_light_count; ++i) {
+            SpotLight light = spot_lights[i];
+
+        }
 
 
 

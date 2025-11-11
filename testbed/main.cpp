@@ -100,15 +100,16 @@ namespace {
         veekay::vec3 position;
         float _pad1;
         veekay::vec3 color;
-        float radius;
+        float intensity;
     };
 
     struct SpotLight {
         veekay::vec3 position;
-        float radius;
+        float intensity;
         veekay::vec3 direction;
         float angle; // Косинус угла
-        veekay::vec3 color; float _pad0;
+        veekay::vec3 color;
+        float _pad0;
     };
 
 // NOTE: Scene objects
@@ -162,15 +163,14 @@ namespace {
 
     veekay::mat4 Camera::view() const {
 
-            veekay::mat4 view = veekay::mat4::identity();
+        veekay::mat4 view = veekay::mat4::identity();
 
-            view[0] = {right.x, up.x, forward.x, 0};
-            view[1] = {right.y, up.y, forward.y, 0};
-            view[2] = {right.z, up.z, forward.z, 0};
+        view[0] = {right.x, up.x, forward.x, 0};
+        view[1] = {right.y, up.y, forward.y, 0};
+        view[2] = {right.z, up.z, forward.z, 0};
 
-            // Применяем трансляцию (перемещаем камеру в нужную позицию)
-            auto lookAt = veekay::mat4::translation(-position) * view;
-
+        // Применяем трансляцию (перемещаем камеру в нужную позицию)
+        auto lookAt = veekay::mat4::translation(-position) * view;
 
 
         if (camera.useLookAt) {
@@ -181,8 +181,8 @@ namespace {
         auto tr = veekay::mat4::translation(-position);
         auto rot_x = veekay::mat4::rotation({1, 0, 0}, -rotation.x);
         auto rot_y = veekay::mat4::rotation({0, 1, 0}, -rotation.y);
-        auto rot_z = veekay::mat4::rotation({0, 0, 1}, -rotation.z) ;
-        auto res = tr * rot_z *rot_y * rot_x;
+        auto rot_z = veekay::mat4::rotation({0, 0, 1}, -rotation.z);
+        auto res = tr * rot_z * rot_y * rot_x;
 
         return res;
     }
@@ -735,12 +735,13 @@ namespace {
         point_lights.emplace_back(PointLight{
                 .position = {0.0, 0.0, 0.0},
                 .color = {1.0, 1.0, 1.0},
-                .radius = 10.0f,
+                .intensity = 10.0f,
         });
 
         spot_lights.emplace_back(SpotLight{
-                .position = {0.0, 0.0, 0.0},
-                .radius = 10.0f,
+                .position = {1.0, 1.0, 1.0},
+                .intensity = 10.0f,
+                .angle = 10,
                 .color = {1.0, 1.0, 1.0},
         });
     }
@@ -780,6 +781,7 @@ namespace {
 
     int tmp = 0;
     veekay::vec3 front = {0.0, 0.0, 1.0};
+
     void update(double time) {
         ImGui::Begin("General lightning:");
         ImGui::InputFloat3("Sun direction", reinterpret_cast<float *>(&sun_dir));
@@ -793,7 +795,6 @@ namespace {
         ImGui::InputFloat3("Spot light pos", reinterpret_cast<float *>(&spot_light_pos));
         ImGui::InputFloat("Angle", reinterpret_cast<float *>(&spot_light_angle));
         ImGui::End();
-
 
 
         camera.useLookAt = tmp > 0;
@@ -852,8 +853,8 @@ namespace {
 
         point_lights[0].position = test_point_light_position;
 
-        spot_lights[0].position = spot_light_pos;
-        spot_lights[0].angle = spot_light_angle;
+//        spot_lights[0].position = spot_light_pos;
+//        spot_lights[0].angle = spot_light_angle;
 
         std::vector<ModelUniforms> model_uniforms(models.size());
         for (size_t i = 0, n = models.size(); i < n; ++i) {
@@ -898,7 +899,7 @@ namespace {
             for (size_t i = 0; i < spot_lights.size(); ++i) {
                 const auto &light = spot_lights[i];
                 char *const pointer = static_cast<char *>(spotlight_buffer->mapped_region) + i * alignment;
-                *reinterpret_cast<SpotLight*>(pointer) = light;
+                *reinterpret_cast<SpotLight *>(pointer) = light;
             }
         }
     }
