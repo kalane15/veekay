@@ -708,8 +708,6 @@ namespace {
                         .position = {-2.0f, -0.6f, -1.5f},
                 },
                 .albedo_color = veekay::vec3{1.0f, 0.0f, 0.0f},
-//                .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
-//                .shininess= 0.5f,
         });
 
         models.emplace_back(Model{
@@ -718,8 +716,8 @@ namespace {
                         .position = {1.5f, -0.6f, -0.5f},
                 },
                 .albedo_color = veekay::vec3{0.0f, 1.0f, 0.0f},
-//                .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
-//                .shininess= 20.0f,
+                .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
+                .shininess= 0.5f,
         });
 
         models.emplace_back(Model{
@@ -728,9 +726,6 @@ namespace {
                         .position = {0.0f, -3.6f, 1.0f},
                 },
                 .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
-//                .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
-//                .shininess= 20.0f,
-
         });
 
         models.emplace_back(Model{
@@ -739,8 +734,6 @@ namespace {
                         .position = {8.5f, -0.6f, -0.5f},
                 },
                 .albedo_color = veekay::vec3{0.0f, 1.0f, 0.0f},
-//                .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
-//                .shininess= 20.0f,
         });
 
         models.emplace_back(Model{
@@ -749,8 +742,6 @@ namespace {
                         .position = {8.0f, -3.6f, 1.0f},
                 },
                 .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
-//                .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
-//                .shininess= 20.0f,
 
         });
 
