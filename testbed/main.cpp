@@ -41,9 +41,7 @@ namespace {
     struct ModelUniforms {
         veekay::mat4 model;
         veekay::vec3 albedo_color;
-        float _pad0;
         veekay::vec3 specular_color;
-        float _pad2;
         float shininess;
     };
 
@@ -701,7 +699,7 @@ namespace {
                 },
                 .albedo_color = veekay::vec3{0.8f, 0.6f, 0.2f},
                 .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
-                .shininess= 500.0f,
+                .shininess= 0.5f,
         });
 
         models.emplace_back(Model{
@@ -711,7 +709,7 @@ namespace {
                 },
                 .albedo_color = veekay::vec3{1.0f, 0.0f, 0.0f},
 //                .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
-//                .shininess= 20.0f,
+//                .shininess= 0.5f,
         });
 
         models.emplace_back(Model{
@@ -821,6 +819,7 @@ namespace {
         ImGui::InputFloat3("Spot light pos", reinterpret_cast<float *>(&spot_light_pos));
         ImGui::InputFloat("Angle", reinterpret_cast<float *>(&spot_light_angle));
         ImGui::InputFloat3("Spot light direction", reinterpret_cast<float *>(&spot_light_dir));
+        ImGui::InputFloat("Shiness", reinterpret_cast<float *>(&models[0].shininess));
         ImGui::End();
 
 
