@@ -754,7 +754,7 @@ namespace {
 
         spot_lights.emplace_back(SpotLight{
                 .position = {1.0, 1.0, 1.0},
-                .intensity = 10.0f,
+                .intensity = 20.0f,
                 .direction = {0.0, 0.0, 1.0},
                 .angle = 0.8660254,
                 .color = {1.0, 1.0, 1.0},
@@ -791,7 +791,7 @@ namespace {
     veekay::vec3 sun_dir = {0.0, -1.0, 0};
     veekay::vec3 test_point_light_position = {0.0, -4.0, -1.0f};
 
-    veekay::vec3 spot_light_pos = {12, -2, -8};
+    veekay::vec3 spot_light_pos = {10, -1, -5};
     veekay::vec3 spot_light_dir = {0.0, 0.0, -1.0};
     float spot_light_angle = 0.8660254;
 
