@@ -618,8 +618,8 @@ namespace {
             // (v3)------(v2)
             std::vector<Vertex> vertices = {
                     {{-5.0f, 0.0f, 5.0f},  {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
-                    {{5.0f,  0.0f, 5.0f},  {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
-                    {{5.0f,  0.0f, -5.0f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f}},
+                    {{15.0f,  0.0f, 5.0f},  {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
+                    {{15.0f,  0.0f, -5.0f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f}},
                     {{-5.0f, 0.0f, -5.0f}, {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f}},
             };
 
@@ -701,7 +701,7 @@ namespace {
                 },
                 .albedo_color = veekay::vec3{0.8f, 0.6f, 0.2f},
                 .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
-                .shininess= 20.0f,
+                .shininess= 500.0f,
         });
 
         models.emplace_back(Model{
@@ -710,6 +710,8 @@ namespace {
                         .position = {-2.0f, -0.6f, -1.5f},
                 },
                 .albedo_color = veekay::vec3{1.0f, 0.0f, 0.0f},
+//                .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
+//                .shininess= 20.0f,
         });
 
         models.emplace_back(Model{
@@ -717,7 +719,9 @@ namespace {
                 .transform = Transform{
                         .position = {1.5f, -0.6f, -0.5f},
                 },
-                .albedo_color = veekay::vec3{0.0f, 1.0f, 0.0f}
+                .albedo_color = veekay::vec3{0.0f, 1.0f, 0.0f},
+//                .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
+//                .shininess= 20.0f,
         });
 
         models.emplace_back(Model{
@@ -726,8 +730,32 @@ namespace {
                         .position = {0.0f, -3.6f, 1.0f},
                 },
                 .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
+//                .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
+//                .shininess= 20.0f,
 
         });
+
+        models.emplace_back(Model{
+                .mesh = cube_mesh,
+                .transform = Transform{
+                        .position = {8.5f, -0.6f, -0.5f},
+                },
+                .albedo_color = veekay::vec3{0.0f, 1.0f, 0.0f},
+//                .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
+//                .shininess= 20.0f,
+        });
+
+        models.emplace_back(Model{
+                .mesh = cube_mesh,
+                .transform = Transform{
+                        .position = {8.0f, -3.6f, 1.0f},
+                },
+                .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
+//                .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
+//                .shininess= 20.0f,
+
+        });
+
 
         point_lights.emplace_back(PointLight{
                 .position = {0.0, 0.0, 0.0},
@@ -740,7 +768,7 @@ namespace {
                 .intensity = 10.0f,
                 .direction = {0.0, 0.0, 1.0},
                 .angle = 0.8660254,
-                .color = {0.0, 1.0, 1.0},
+                .color = {1.0, 1.0, 1.0},
         });
     }
 
@@ -772,13 +800,12 @@ namespace {
     }
 
     veekay::vec3 sun_dir = {0.0, -1.0, 0};
-    veekay::vec3 test_point_light_position = {0.0, -4.0, 1.0f};
+    veekay::vec3 test_point_light_position = {0.0, -4.0, -1.0f};
 
-    veekay::vec3 spot_light_pos = test_point_light_position;
-    veekay::vec3 spot_light_dir = {0.0, 0.0, 1.0};
+    veekay::vec3 spot_light_pos = {12, -2, -8};
+    veekay::vec3 spot_light_dir = {0.0, 0.0, -1.0};
     float spot_light_angle = 0.8660254;
 
-    int tmp = 0;
     veekay::vec3 front = {0.0, 0.0, 1.0};
 
     void update(double time) {
@@ -789,7 +816,7 @@ namespace {
 
         ImGui::InputFloat3("Camera rot", reinterpret_cast<float *>(&camera.rotation));
         ImGui::InputFloat3("Camera pos", reinterpret_cast<float *>(&camera.position));
-        ImGui::InputInt("Use lookAt?", &tmp);
+        ImGui::Checkbox("Use LookAt?", &camera.useLookAt);
 
         ImGui::InputFloat3("Spot light pos", reinterpret_cast<float *>(&spot_light_pos));
         ImGui::InputFloat("Angle", reinterpret_cast<float *>(&spot_light_angle));
@@ -797,7 +824,6 @@ namespace {
         ImGui::End();
 
 
-        camera.useLookAt = tmp > 0;
         camera.forward.x = sin(camera.rotation.y) * cos(camera.rotation.x);
         camera.forward.y = -sin(camera.rotation.x);
         camera.forward.z = cos(camera.rotation.y) * cos(camera.rotation.x);

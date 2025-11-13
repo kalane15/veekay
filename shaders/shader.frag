@@ -58,6 +58,7 @@ void main() {
 
     vec3 sun_half = normalize(view_dir + sun_dir);
     float sun_spec_factor = max(dot(normal, sun_half), 0.0);
+
     vec3 sun_specular = specular_color * max(0.0, pow(sun_spec_factor, shininess));
 
 
