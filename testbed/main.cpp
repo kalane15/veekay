@@ -41,6 +41,7 @@ namespace {
     struct ModelUniforms {
         veekay::mat4 model;
         veekay::vec3 albedo_color;
+        float _pad0;
         veekay::vec3 specular_color;
         float shininess;
     };
