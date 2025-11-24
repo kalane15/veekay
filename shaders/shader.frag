@@ -45,6 +45,8 @@ layout(binding = 3, std430) readonly buffer SpotLights {
     SpotLight spot_lights[];
 };
 
+layout (binding = 4) uniform sampler2D albedo_texture;
+
 void main() {
     vec3 normal = normalize(f_normal);
     vec3 view_dir = normalize(view_position - f_position);
@@ -87,37 +89,37 @@ void main() {
         point_light_color += attenuation * (diffuse + specular) * diffuse_factor;
     }
 
-vec3 spot_light_color = vec3(0.0, 0.0, 0.0);
+    vec3 spot_light_color = vec3(0.0, 0.0, 0.0);
 
-for (uint i = 0; i < spot_light_count; ++i) {
-    SpotLight light = spot_lights[i];
-    vec3 light_dir = normalize(light.position - f_position);
-    float distance = length(light.position - f_position);
-    float attenuation = light.intensity / (distance * distance);
+    for (uint i = 0; i < spot_light_count; ++i) {
+        SpotLight light = spot_lights[i];
+        vec3 light_dir = normalize(light.position - f_position);
+        float distance = length(light.position - f_position);
+        float attenuation = light.intensity / (distance * distance);
 
-    // diffuse
-    float diffuse_factor = max(dot(normal, light_dir), 0.0);
-    vec3 diffuse = light.color * diffuse_factor * albedo_color;
+        // diffuse
+        float diffuse_factor = max(dot(normal, light_dir), 0.0);
+        vec3 diffuse = light.color * diffuse_factor * albedo_color;
 
-    // specular
-    vec3 half_vec = normalize(light_dir + view_dir);
-    float spec_factor = max(dot(normal, half_vec), 0.0);
-    vec3 specular = light.color * specular_color * pow(spec_factor, shininess);
+        // specular
+        vec3 half_vec = normalize(light_dir + view_dir);
+        float spec_factor = max(dot(normal, half_vec), 0.0);
+        vec3 specular = light.color * specular_color * pow(spec_factor, shininess);
 
-    vec3 res_color = attenuation * (diffuse + specular) * diffuse_factor;
+        vec3 res_color = attenuation * (diffuse + specular) * diffuse_factor;
 
-    float theta = dot(light_dir, normalize(light.direction));
+        float theta = dot(light_dir, normalize(light.direction));
 
-    float outer_angle = light.angle;
-    float inner_angle = light.angle * 0.9;
+        float outer_angle = light.angle;
+        float inner_angle = light.angle * 0.9;
 
-    float spot_factor = clamp(
-        (outer_angle - theta) / (inner_angle - outer_angle),
-        0.0, 1.0
-    );
+        float spot_factor = clamp(
+            (outer_angle - theta) / (inner_angle - outer_angle),
+            0.0, 1.0
+        );
 
-    spot_light_color += res_color * spot_factor;
-}
+        spot_light_color += res_color * spot_factor;
+    }
 
 
 
@@ -125,5 +127,6 @@ for (uint i = 0; i < spot_light_count; ++i) {
 
 
     vec3 color = sun_color + point_light_color + ambient_light_intensity + spot_light_color;
-    final_color = vec4(color, 1.0);
+    vec4 texel = texture(albedo_texture, f_uv);
+    final_color = vec4(texel.rgb + color, 1.0);
 }
