@@ -131,7 +131,9 @@ namespace {
         VkDescriptorPool descriptor_pool;
         VkDescriptorSetLayout descriptor_set_layout;
         VkDescriptorSetLayout sampler_set_layout;
-        VkDescriptorSet descriptor_set;
+
+        std::vector<VkDescriptorImageInfo> image_info;
+        std::vector<veekay::graphics::Texture *> textures;
 
         VkPipelineLayout pipeline_layout;
         VkPipeline pipeline;
@@ -146,7 +148,6 @@ namespace {
 
         VkSampler missing_texture_sampler;
 
-        veekay::graphics::Texture *texture;
         VkSampler texture_sampler;
     }
 
@@ -454,47 +455,21 @@ namespace {
                     return;
                 }
 
-//               for (Model model: models) {
-//                    if (model.texture_path.empty()) {
-//                        continue;
-//                    }
-//
-//                    uint32_t width, height;
-//                    std::vector<uint8_t> pixels;
-//                    lodepng::decode(pixels, width, height, model.texture_path);
-//
-//                    texture = new veekay::graphics::Texture(
-//                            cmd, width, height,
-//                            VK_FORMAT_R8G8B8A8_UNORM,
-//                            pixels.data());
-//
-//                    VkDescriptorSetAllocateInfo all_info{
-//                            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-//                            .descriptorPool = descriptor_pool,
-//                            .descriptorSetCount = 1,
-//                            .pSetLayouts = &descriptor_set_layout,
-//                    };
-//
-//                    if (vkAllocateDescriptorSets(device, &all_info, &model.texture_descriptors_set) != VK_SUCCESS) {
-//                        std::cerr << "Failed to create Vulkan descriptor set\n";
-//                        veekay::app.running = false;
-//                        return;
-//                    }
-//                }
-            }
+                for (Model model: models) {
 
-            {
-                VkDescriptorSetAllocateInfo info{
-                        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                        .descriptorPool = descriptor_pool,
-                        .descriptorSetCount = 1,
-                        .pSetLayouts = &descriptor_set_layout,
-                };
+                    VkDescriptorSetAllocateInfo all_info{
+                            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                            .descriptorPool = descriptor_pool,
+                            .descriptorSetCount = 1,
+                            .pSetLayouts = &descriptor_set_layout,
+                    };
 
-                if (vkAllocateDescriptorSets(device, &info, &descriptor_set) != VK_SUCCESS) {
-                    std::cerr << "Failed to create Vulkan descriptor set\n";
-                    veekay::app.running = false;
-                    return;
+                    if (vkAllocateDescriptorSets(device, &all_info, &model.texture_descriptors_set) != VK_SUCCESS) {
+                        std::cerr << "Failed to create Vulkan descriptor set\n";
+                        veekay::app.running = false;
+                        return;
+                    }
+
                 }
             }
 
@@ -605,80 +580,94 @@ namespace {
                             .range = sizeof(SpotLight),
                     },
             };
-            uint32_t width, height;
-            std::vector<uint8_t> pixels;
-            lodepng::decode(pixels, width, height, "./assets/lenna.png");
-
-            texture = new veekay::graphics::Texture(
-                    cmd, width, height,
-                    VK_FORMAT_R8G8B8A8_UNORM,
-                    pixels.data());
-            VkDescriptorImageInfo image_infos[] = {
-                    {
-                            .sampler = texture_sampler,         // Какой сэмплер будет использоваться
-                            .imageView = texture->view, // Какая текстура будет использоваться
-                            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                    },
-            };
 
 
-            VkWriteDescriptorSet write_infos[] = {
-                    {
-                            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                            .dstSet = descriptor_set,
-                            .dstBinding = 0,
-                            .dstArrayElement = 0,
-                            .descriptorCount = 1,
-                            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                            .pBufferInfo = &buffer_infos[0],
-                    },
-                    {
-                            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                            .dstSet = descriptor_set,
-                            .dstBinding = 1,
-                            .dstArrayElement = 0,
-                            .descriptorCount = 1,
-                            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-                            .pBufferInfo = &buffer_infos[1],
-                    },
-                    {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                            .dstSet = descriptor_set,
-                            .dstBinding = 2,
-                            .descriptorCount = 1,
-                            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                            .pBufferInfo = &buffer_infos[2],
-                    },
-                    {.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                            .dstSet = descriptor_set,
-                            .dstBinding = 3,
-                            .descriptorCount = 1,
-                            .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                            .pBufferInfo = &buffer_infos[3],
-                    },
-                    {
-                            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                            .dstSet = descriptor_set,
-                            .dstBinding = 4,
-                            .dstArrayElement = 0,
-                            .descriptorCount = 1,
-                            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                            .pImageInfo = &image_infos[0],
-                    },
+            for (uint32_t i = 0; i < models.size(); ++i) {
 
+                VkDescriptorImageInfo image_i;  // Динамический массив для текстур
+                Model &m = models[i];
 
-            };
+                if (m.texture_path.empty()) {
+                    m.texture_path = "./assets/lenna.png";  // По умолчанию
+                }
 
-            vkUpdateDescriptorSets(device, sizeof(write_infos) / sizeof(write_infos[0]),
-                                   write_infos, 0, nullptr);
+                // Загрузка текстуры для каждой модели
+                uint32_t width, height;
+                std::vector<uint8_t> pixels;
+                lodepng::decode(pixels, width, height, m.texture_path);
+
+                // Создаем текстуру для каждой модели
+                veekay::graphics::Texture *texture = new veekay::graphics::Texture(
+                        cmd, width, height, VK_FORMAT_R8G8B8A8_UNORM, pixels.data()
+                );
+
+                // Подготовка информации о текстуре для обновления дескриптора
+                image_i = {
+                        .sampler = texture_sampler,                // Сэмплер
+                        .imageView = texture->view,                // Текстура
+                        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                };
+
+                image_info[i] = image_i;
+                textures[i] = texture;
+                VkWriteDescriptorSet write_infos[] = {{
+                                       .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                       .dstSet = m.texture_descriptors_set,
+                                       .dstBinding = 0,
+                                       .dstArrayElement = 0,
+                                       .descriptorCount = 1,
+                                       .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                       .pBufferInfo = &buffer_infos[0],
+                               },
+
+                               {
+                                       .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                       .dstSet = m.texture_descriptors_set,
+                                       .dstBinding = 1,
+                                       .dstArrayElement = 0,
+                                       .descriptorCount = 1,
+                                       .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+                                       .pBufferInfo = &buffer_infos[1],
+                               },
+
+                               {
+                                       .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                       .dstSet = m.texture_descriptors_set,
+                                       .dstBinding = 2,
+                                       .descriptorCount = 1,
+                                       .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                       .pBufferInfo = &buffer_infos[2],
+                               },
+
+                               {
+                                       .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                       .dstSet = m.texture_descriptors_set,
+                                       .dstBinding = 3,
+                                       .descriptorCount = 1,
+                                       .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                       .pBufferInfo = &buffer_infos[3],
+                               },
+
+                               {
+                                       .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                       .dstSet = m.texture_descriptors_set,
+                                       .dstBinding = 4,
+                                       .descriptorCount = 1,
+                                       .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                       .pImageInfo = &image_info[i],
+                               }};
+                vkUpdateDescriptorSets(device, sizeof(write_infos) / sizeof(write_infos[0]), write_infos, 0, nullptr);
+            }
         }
 
-        // NOTE: Plane mesh initialization
+
+// NOTE: Plane mesh initialization
         {
-            // (v0)------(v1)
-            //  |  \       |
-            //  |   `--,   |
-            //  |       \  |
-            // (v3)------(v2)
+// (v0)------(v1)
+//  |  \       |
+//  |   `--,   |
+//  |       \  |
+// (v3)------(v2)
             std::vector<Vertex> vertices = {
                     {{-5.0f, 0.0f, 5.0f},  {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
                     {{15.0f, 0.0f, 5.0f},  {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
@@ -691,18 +680,21 @@ namespace {
                     0, 1, 2, 2, 3, 0
             };
 
-            plane_mesh.vertex_buffer = new veekay::graphics::Buffer(
+            plane_mesh.
+                    vertex_buffer = new veekay::graphics::Buffer(
                     vertices.size() * sizeof(Vertex), vertices.data(),
                     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
-            plane_mesh.index_buffer = new veekay::graphics::Buffer(
+            plane_mesh.
+                    index_buffer = new veekay::graphics::Buffer(
                     indices.size() * sizeof(uint32_t), indices.data(),
                     VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 
-            plane_mesh.indices = uint32_t(indices.size());
+            plane_mesh.
+                    indices = uint32_t(indices.size());
         }
 
-        // NOTE: Cube mesh initialization
+// NOTE: Cube mesh initialization
         {
             std::vector<Vertex> vertices = {
                     {{-0.5f, -0.5f, -0.5f}, {0.0f,  0.0f,  -1.0f}, {0.0f, 0.0f}},
@@ -745,88 +737,107 @@ namespace {
                     20, 21, 22, 22, 23, 20,
             };
 
-            cube_mesh.vertex_buffer = new veekay::graphics::Buffer(
+            cube_mesh.
+                    vertex_buffer = new veekay::graphics::Buffer(
                     vertices.size() * sizeof(Vertex), vertices.data(),
                     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
-            cube_mesh.index_buffer = new veekay::graphics::Buffer(
+            cube_mesh.
+                    index_buffer = new veekay::graphics::Buffer(
                     indices.size() * sizeof(uint32_t), indices.data(),
                     VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 
-            cube_mesh.indices = uint32_t(indices.size());
+            cube_mesh.
+                    indices = uint32_t(indices.size());
         }
 
-        // NOTE: Add models to scene
+// NOTE: Add models to scene
         {
-        models.emplace_back(Model{
-                .mesh = plane_mesh,
-                .transform = Transform{
-                        .position = {0.0f, 0.0f, 0.0}
-                },
-                .albedo_color = veekay::vec3{0.8f, 0.6f, 0.2f},
-                .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
-                .shininess= 0.5f,
-        });
+            models.
+                    emplace_back(Model{
+                                         .mesh = plane_mesh,
+                                         .transform = Transform{
+                                                 .position = {0.0f, 0.0f, 0.0}
+                                         },
+                                         .albedo_color = veekay::vec3{0.8f, 0.6f, 0.2f},
+                                         .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
+                                         .shininess= 0.5f,
+                                 }
+            );
 
-        models.emplace_back(Model{
-                .mesh = cube_mesh,
-                .transform = Transform{
-                        .position = {-2.0f, -0.6f, -1.5f},
-                },
-                .albedo_color = veekay::vec3{1.0f, 0.0f, 0.0f},
-                .texture_path = "sw.png"
-        });
+            models.
+                    emplace_back(Model{
+                                         .mesh = cube_mesh,
+                                         .transform = Transform{
+                                                 .position = {-2.0f, -0.6f, -1.5f},
+                                         },
+                                         .albedo_color = veekay::vec3{1.0f, 0.0f, 0.0f},
+                                         .texture_path = "sw.png"
+                                 }
+            );
 
-        models.emplace_back(Model{
-                .mesh = cube_mesh,
-                .transform = Transform{
-                        .position = {1.5f, -0.6f, -0.5f},
-                },
-                .albedo_color = veekay::vec3{0.0f, 1.0f, 0.0f},
-                .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
-                .shininess= 0.5f,
-        });
+            models.
+                    emplace_back(Model{
+                                         .mesh = cube_mesh,
+                                         .transform = Transform{
+                                                 .position = {1.5f, -0.6f, -0.5f},
+                                         },
+                                         .albedo_color = veekay::vec3{0.0f, 1.0f, 0.0f},
+                                         .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
+                                         .shininess= 0.5f,
+                                 }
+            );
 
-        models.emplace_back(Model{
-                .mesh = cube_mesh,
-                .transform = Transform{
-                        .position = {0.0f, -3.6f, 1.0f},
-                },
-                .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
-        });
+            models.
+                    emplace_back(Model{
+                                         .mesh = cube_mesh,
+                                         .transform = Transform{
+                                                 .position = {0.0f, -3.6f, 1.0f},
+                                         },
+                                         .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
+                                 }
+            );
 
-        models.emplace_back(Model{
-                .mesh = cube_mesh,
-                .transform = Transform{
-                        .position = {8.5f, -0.6f, -0.5f},
-                },
-                .albedo_color = veekay::vec3{0.0f, 1.0f, 0.0f},
-        });
+            models.
+                    emplace_back(Model{
+                                         .mesh = cube_mesh,
+                                         .transform = Transform{
+                                                 .position = {8.5f, -0.6f, -0.5f},
+                                         },
+                                         .albedo_color = veekay::vec3{0.0f, 1.0f, 0.0f},
+                                 }
+            );
 
-        models.emplace_back(Model{
-                .mesh = cube_mesh,
-                .transform = Transform{
-                        .position = {8.0f, -3.6f, 1.0f},
-                },
-                .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
+            models.
+                    emplace_back(Model{
+                                         .mesh = cube_mesh,
+                                         .transform = Transform{
+                                                 .position = {8.0f, -3.6f, 1.0f},
+                                         },
+                                         .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
 
-        });
+                                 }
+            );
 
 
-        point_lights.emplace_back(PointLight{
-                .position = {0.0, 0.0, 0.0},
-                .color = {1.0, 1.0, 1.0},
-                .intensity = 10.0f,
-        });
+            point_lights.
+                    emplace_back(PointLight{
+                                         .position = {0.0, 0.0, 0.0},
+                                         .color = {1.0, 1.0, 1.0},
+                                         .intensity = 10.0f,
+                                 }
+            );
 
-        spot_lights.emplace_back(SpotLight{
-                .position = {1.0, 1.0, 1.0},
-                .intensity = 20.0f,
-                .direction = {0.0, 0.0, 1.0},
-                .angle = 0.8660254,
-                .color = {1.0, 1.0, 1.0},
-        });
-    }
+            spot_lights.
+                    emplace_back(SpotLight{
+                                         .position = {1.0, 1.0, 1.0},
+                                         .intensity = 20.0f,
+                                         .direction = {0.0, 0.0, 1.0},
+                                         .angle = 0.8660254,
+                                         .color = {1.0, 1.0, 1.0},
+                                 }
+            );
+        }
     }
 
 // NOTE: Destroy resources here, do not cause leaks in your program!
@@ -841,7 +852,6 @@ namespace {
         delete plane_mesh.index_buffer;
         delete plane_mesh.vertex_buffer;
 
-        delete texture;
 
         delete model_uniforms_buffer;
         delete scene_uniforms_buffer;
@@ -1058,21 +1068,10 @@ namespace {
                     pipeline_layout,
                     0,                    // set = 0 → UBO + SSBO
                     1,                    // count = 1
-                    &descriptor_set,      // descriptor set #0
+                    &model.texture_descriptors_set,      // descriptor set #0
                     1,                    // dynamicOffsetCount = 1
                     &dynamicOffset        // pointer to 1 offset
             );
-
-//            vkCmdBindDescriptorSets(
-//                    cmd,
-//                    VK_PIPELINE_BIND_POINT_GRAPHICS,
-//                    pipeline_layout,
-//                    1,
-//                    1,
-//                    &model.texture_descriptors_set,
-//                    0,
-//                    &dynamicOffset
-//            );
 
             vkCmdDrawIndexed(cmd, mesh.indices, 1, 0, 0, 0);
         }
