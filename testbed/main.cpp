@@ -219,6 +219,180 @@ namespace {
     }
 
     void initialize(VkCommandBuffer cmd) {
+        // NOTE: Plane mesh initialization
+        {
+// (v0)------(v1)
+//  |  \       |
+//  |   `--,   |
+//  |       \  |
+// (v3)------(v2)
+            std::vector<Vertex> vertices = {
+                    {{-5.0f, 0.0f, 5.0f},  {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
+                    {{15.0f, 0.0f, 5.0f},  {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
+                    {{15.0f, 0.0f, -5.0f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f}},
+                    {{-5.0f, 0.0f, -5.0f}, {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f}},
+            };
+
+            std::vector<uint32_t> indices = {
+                    0, 3, 2, 2, 1, 0,
+                    0, 1, 2, 2, 3, 0
+            };
+
+            plane_mesh.
+                    vertex_buffer = new veekay::graphics::Buffer(
+                    vertices.size() * sizeof(Vertex), vertices.data(),
+                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+
+            plane_mesh.
+                    index_buffer = new veekay::graphics::Buffer(
+                    indices.size() * sizeof(uint32_t), indices.data(),
+                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+
+            plane_mesh.
+                    indices = uint32_t(indices.size());
+        }
+
+// NOTE: Cube mesh initialization
+        {
+            std::vector<Vertex> vertices = {
+                    {{-0.5f, -0.5f, -0.5f}, {0.0f,  0.0f,  -1.0f}, {0.0f, 0.0f}},
+                    {{+0.5f, -0.5f, -0.5f}, {0.0f,  0.0f,  -1.0f}, {1.0f, 0.0f}},
+                    {{+0.5f, +0.5f, -0.5f}, {0.0f,  0.0f,  -1.0f}, {1.0f, 1.0f}},
+                    {{-0.5f, +0.5f, -0.5f}, {0.0f,  0.0f,  -1.0f}, {0.0f, 1.0f}},
+
+                    {{+0.5f, -0.5f, -0.5f}, {1.0f,  0.0f,  0.0f},  {0.0f, 0.0f}},
+                    {{+0.5f, -0.5f, +0.5f}, {1.0f,  0.0f,  0.0f},  {1.0f, 0.0f}},
+                    {{+0.5f, +0.5f, +0.5f}, {1.0f,  0.0f,  0.0f},  {1.0f, 1.0f}},
+                    {{+0.5f, +0.5f, -0.5f}, {1.0f,  0.0f,  0.0f},  {0.0f, 1.0f}},
+
+                    {{+0.5f, -0.5f, +0.5f}, {0.0f,  0.0f,  1.0f},  {0.0f, 0.0f}},
+                    {{-0.5f, -0.5f, +0.5f}, {0.0f,  0.0f,  1.0f},  {1.0f, 0.0f}},
+                    {{-0.5f, +0.5f, +0.5f}, {0.0f,  0.0f,  1.0f},  {1.0f, 1.0f}},
+                    {{+0.5f, +0.5f, +0.5f}, {0.0f,  0.0f,  1.0f},  {0.0f, 1.0f}},
+
+                    {{-0.5f, -0.5f, +0.5f}, {-1.0f, 0.0f,  0.0f},  {0.0f, 0.0f}},
+                    {{-0.5f, -0.5f, -0.5f}, {-1.0f, 0.0f,  0.0f},  {1.0f, 0.0f}},
+                    {{-0.5f, +0.5f, -0.5f}, {-1.0f, 0.0f,  0.0f},  {1.0f, 1.0f}},
+                    {{-0.5f, +0.5f, +0.5f}, {-1.0f, 0.0f,  0.0f},  {0.0f, 1.0f}},
+
+                    {{-0.5f, -0.5f, +0.5f}, {0.0f,  -1.0f, 0.0f},  {0.0f, 0.0f}},
+                    {{+0.5f, -0.5f, +0.5f}, {0.0f,  -1.0f, 0.0f},  {1.0f, 0.0f}},
+                    {{+0.5f, -0.5f, -0.5f}, {0.0f,  -1.0f, 0.0f},  {1.0f, 1.0f}},
+                    {{-0.5f, -0.5f, -0.5f}, {0.0f,  -1.0f, 0.0f},  {0.0f, 1.0f}},
+
+                    {{-0.5f, +0.5f, -0.5f}, {0.0f,  1.0f,  0.0f},  {0.0f, 0.0f}},
+                    {{+0.5f, +0.5f, -0.5f}, {0.0f,  1.0f,  0.0f},  {1.0f, 0.0f}},
+                    {{+0.5f, +0.5f, +0.5f}, {0.0f,  1.0f,  0.0f},  {1.0f, 1.0f}},
+                    {{-0.5f, +0.5f, +0.5f}, {0.0f,  1.0f,  0.0f},  {0.0f, 1.0f}},
+            };
+
+            std::vector<uint32_t> indices = {
+                    0, 1, 2, 2, 3, 0,
+                    4, 5, 6, 6, 7, 4,
+                    8, 9, 10, 10, 11, 8,
+                    12, 13, 14, 14, 15, 12,
+                    16, 17, 18, 18, 19, 16,
+                    20, 21, 22, 22, 23, 20,
+            };
+
+            cube_mesh.
+                    vertex_buffer = new veekay::graphics::Buffer(
+                    vertices.size() * sizeof(Vertex), vertices.data(),
+                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+
+            cube_mesh.
+                    index_buffer = new veekay::graphics::Buffer(
+                    indices.size() * sizeof(uint32_t), indices.data(),
+                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+
+            cube_mesh.
+                    indices = uint32_t(indices.size());
+        models.
+                emplace_back(Model{
+                                     .mesh = plane_mesh,
+                                     .transform = Transform{
+                                             .position = {0.0f, 0.0f, 0.0}
+                                     },
+                                     .albedo_color = veekay::vec3{0.8f, 0.6f, 0.2f},
+                                     .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
+                                     .shininess= 0.5f,
+                             }
+        );
+
+        models.
+                emplace_back(Model{
+                                     .mesh = cube_mesh,
+                                     .transform = Transform{
+                                             .position = {-2.0f, -0.6f, -1.5f},
+                                     },
+                                     .albedo_color = veekay::vec3{1.0f, 0.0f, 0.0f}
+                             }
+        );
+
+        models.
+                emplace_back(Model{
+                                     .mesh = cube_mesh,
+                                     .transform = Transform{
+                                             .position = {1.5f, -0.6f, -0.5f},
+                                     },
+                                     .albedo_color = veekay::vec3{0.0f, 1.0f, 0.0f},
+                                     .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
+                                     .shininess= 0.5f,
+                             }
+        );
+
+        models.
+                emplace_back(Model{
+                                     .mesh = cube_mesh,
+                                     .transform = Transform{
+                                             .position = {0.0f, -3.6f, 1.0f},
+                                     },
+                                     .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
+                             }
+        );
+
+        models.
+                emplace_back(Model{
+                                     .mesh = cube_mesh,
+                                     .transform = Transform{
+                                             .position = {8.5f, -0.6f, -0.5f},
+                                     },
+                                     .albedo_color = veekay::vec3{0.0f, 1.0f, 0.0f},
+                                     .texture_path = "./assets/sw.png"
+                             }
+        );
+
+        models.
+                emplace_back(Model{
+                                     .mesh = cube_mesh,
+                                     .transform = Transform{
+                                             .position = {8.0f, -3.6f, 1.0f},
+                                     },
+                                     .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
+
+                             }
+        );
+
+
+        point_lights.
+                emplace_back(PointLight{
+                                     .position = {0.0, 0.0, 0.0},
+                                     .color = {1.0, 1.0, 1.0},
+                                     .intensity = 10.0f,
+                             }
+        );
+
+        spot_lights.
+                emplace_back(SpotLight{
+                                     .position = {1.0, 1.0, 1.0},
+                                     .intensity = 20.0f,
+                                     .direction = {0.0, 0.0, 1.0},
+                                     .angle = 0.8660254,
+                                     .color = {1.0, 1.0, 1.0},
+                             }
+        );
+
+
         VkDevice &device = veekay::app.vk_device;
         VkPhysicalDevice &physical_device = veekay::app.vk_physical_device;
 
@@ -392,7 +566,7 @@ namespace {
 
                 VkDescriptorPoolCreateInfo info{
                         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-                        .maxSets = 1,
+                        .maxSets = 10,
                         .poolSizeCount = sizeof(pools) / sizeof(pools[0]),
                         .pPoolSizes = pools,
                 };
@@ -455,7 +629,7 @@ namespace {
                     return;
                 }
 
-                for (Model model: models) {
+                for (uint32_t i = 0; i < models.size(); i++) {
 
                     VkDescriptorSetAllocateInfo all_info{
                             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -464,7 +638,8 @@ namespace {
                             .pSetLayouts = &descriptor_set_layout,
                     };
 
-                    if (vkAllocateDescriptorSets(device, &all_info, &model.texture_descriptors_set) != VK_SUCCESS) {
+                    if (vkAllocateDescriptorSets(device, &all_info, &models[i].texture_descriptors_set) != VK_SUCCESS) {
+                        std::cout << i << '\n';
                         std::cerr << "Failed to create Vulkan descriptor set\n";
                         veekay::app.running = false;
                         return;
@@ -586,7 +761,7 @@ namespace {
 
                 VkDescriptorImageInfo image_i;  // Динамический массив для текстур
                 Model &m = models[i];
-
+                std::cout << m.texture_path << "\n";
                 if (m.texture_path.empty()) {
                     m.texture_path = "./assets/lenna.png";  // По умолчанию
                 }
@@ -608,236 +783,62 @@ namespace {
                         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
                 };
 
-                image_info[i] = image_i;
-                textures[i] = texture;
+                image_info.push_back(image_i);
+                textures.push_back(texture);
                 VkWriteDescriptorSet write_infos[] = {{
-                                       .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                       .dstSet = m.texture_descriptors_set,
-                                       .dstBinding = 0,
-                                       .dstArrayElement = 0,
-                                       .descriptorCount = 1,
-                                       .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                       .pBufferInfo = &buffer_infos[0],
-                               },
+                                                              .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                                              .dstSet = m.texture_descriptors_set,
+                                                              .dstBinding = 0,
+                                                              .dstArrayElement = 0,
+                                                              .descriptorCount = 1,
+                                                              .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                              .pBufferInfo = &buffer_infos[0],
+                                                      },
 
-                               {
-                                       .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                       .dstSet = m.texture_descriptors_set,
-                                       .dstBinding = 1,
-                                       .dstArrayElement = 0,
-                                       .descriptorCount = 1,
-                                       .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-                                       .pBufferInfo = &buffer_infos[1],
-                               },
+                                                      {
+                                                              .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                                              .dstSet = m.texture_descriptors_set,
+                                                              .dstBinding = 1,
+                                                              .dstArrayElement = 0,
+                                                              .descriptorCount = 1,
+                                                              .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+                                                              .pBufferInfo = &buffer_infos[1],
+                                                      },
 
-                               {
-                                       .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                       .dstSet = m.texture_descriptors_set,
-                                       .dstBinding = 2,
-                                       .descriptorCount = 1,
-                                       .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                       .pBufferInfo = &buffer_infos[2],
-                               },
+                                                      {
+                                                              .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                                              .dstSet = m.texture_descriptors_set,
+                                                              .dstBinding = 2,
+                                                              .descriptorCount = 1,
+                                                              .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                                              .pBufferInfo = &buffer_infos[2],
+                                                      },
 
-                               {
-                                       .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                       .dstSet = m.texture_descriptors_set,
-                                       .dstBinding = 3,
-                                       .descriptorCount = 1,
-                                       .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                       .pBufferInfo = &buffer_infos[3],
-                               },
+                                                      {
+                                                              .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                                              .dstSet = m.texture_descriptors_set,
+                                                              .dstBinding = 3,
+                                                              .descriptorCount = 1,
+                                                              .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                                              .pBufferInfo = &buffer_infos[3],
+                                                      },
 
-                               {
-                                       .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                       .dstSet = m.texture_descriptors_set,
-                                       .dstBinding = 4,
-                                       .descriptorCount = 1,
-                                       .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                       .pImageInfo = &image_info[i],
-                               }};
+                                                      {
+                                                              .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                                              .dstSet = m.texture_descriptors_set,
+                                                              .dstBinding = 4,
+                                                              .descriptorCount = 1,
+                                                              .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                                              .pImageInfo = &image_info[i],
+                                                      }};
                 vkUpdateDescriptorSets(device, sizeof(write_infos) / sizeof(write_infos[0]), write_infos, 0, nullptr);
             }
         }
 
 
-// NOTE: Plane mesh initialization
-        {
-// (v0)------(v1)
-//  |  \       |
-//  |   `--,   |
-//  |       \  |
-// (v3)------(v2)
-            std::vector<Vertex> vertices = {
-                    {{-5.0f, 0.0f, 5.0f},  {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
-                    {{15.0f, 0.0f, 5.0f},  {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
-                    {{15.0f, 0.0f, -5.0f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f}},
-                    {{-5.0f, 0.0f, -5.0f}, {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f}},
-            };
 
-            std::vector<uint32_t> indices = {
-                    0, 3, 2, 2, 1, 0,
-                    0, 1, 2, 2, 3, 0
-            };
-
-            plane_mesh.
-                    vertex_buffer = new veekay::graphics::Buffer(
-                    vertices.size() * sizeof(Vertex), vertices.data(),
-                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-
-            plane_mesh.
-                    index_buffer = new veekay::graphics::Buffer(
-                    indices.size() * sizeof(uint32_t), indices.data(),
-                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-
-            plane_mesh.
-                    indices = uint32_t(indices.size());
         }
 
-// NOTE: Cube mesh initialization
-        {
-            std::vector<Vertex> vertices = {
-                    {{-0.5f, -0.5f, -0.5f}, {0.0f,  0.0f,  -1.0f}, {0.0f, 0.0f}},
-                    {{+0.5f, -0.5f, -0.5f}, {0.0f,  0.0f,  -1.0f}, {1.0f, 0.0f}},
-                    {{+0.5f, +0.5f, -0.5f}, {0.0f,  0.0f,  -1.0f}, {1.0f, 1.0f}},
-                    {{-0.5f, +0.5f, -0.5f}, {0.0f,  0.0f,  -1.0f}, {0.0f, 1.0f}},
-
-                    {{+0.5f, -0.5f, -0.5f}, {1.0f,  0.0f,  0.0f},  {0.0f, 0.0f}},
-                    {{+0.5f, -0.5f, +0.5f}, {1.0f,  0.0f,  0.0f},  {1.0f, 0.0f}},
-                    {{+0.5f, +0.5f, +0.5f}, {1.0f,  0.0f,  0.0f},  {1.0f, 1.0f}},
-                    {{+0.5f, +0.5f, -0.5f}, {1.0f,  0.0f,  0.0f},  {0.0f, 1.0f}},
-
-                    {{+0.5f, -0.5f, +0.5f}, {0.0f,  0.0f,  1.0f},  {0.0f, 0.0f}},
-                    {{-0.5f, -0.5f, +0.5f}, {0.0f,  0.0f,  1.0f},  {1.0f, 0.0f}},
-                    {{-0.5f, +0.5f, +0.5f}, {0.0f,  0.0f,  1.0f},  {1.0f, 1.0f}},
-                    {{+0.5f, +0.5f, +0.5f}, {0.0f,  0.0f,  1.0f},  {0.0f, 1.0f}},
-
-                    {{-0.5f, -0.5f, +0.5f}, {-1.0f, 0.0f,  0.0f},  {0.0f, 0.0f}},
-                    {{-0.5f, -0.5f, -0.5f}, {-1.0f, 0.0f,  0.0f},  {1.0f, 0.0f}},
-                    {{-0.5f, +0.5f, -0.5f}, {-1.0f, 0.0f,  0.0f},  {1.0f, 1.0f}},
-                    {{-0.5f, +0.5f, +0.5f}, {-1.0f, 0.0f,  0.0f},  {0.0f, 1.0f}},
-
-                    {{-0.5f, -0.5f, +0.5f}, {0.0f,  -1.0f, 0.0f},  {0.0f, 0.0f}},
-                    {{+0.5f, -0.5f, +0.5f}, {0.0f,  -1.0f, 0.0f},  {1.0f, 0.0f}},
-                    {{+0.5f, -0.5f, -0.5f}, {0.0f,  -1.0f, 0.0f},  {1.0f, 1.0f}},
-                    {{-0.5f, -0.5f, -0.5f}, {0.0f,  -1.0f, 0.0f},  {0.0f, 1.0f}},
-
-                    {{-0.5f, +0.5f, -0.5f}, {0.0f,  1.0f,  0.0f},  {0.0f, 0.0f}},
-                    {{+0.5f, +0.5f, -0.5f}, {0.0f,  1.0f,  0.0f},  {1.0f, 0.0f}},
-                    {{+0.5f, +0.5f, +0.5f}, {0.0f,  1.0f,  0.0f},  {1.0f, 1.0f}},
-                    {{-0.5f, +0.5f, +0.5f}, {0.0f,  1.0f,  0.0f},  {0.0f, 1.0f}},
-            };
-
-            std::vector<uint32_t> indices = {
-                    0, 1, 2, 2, 3, 0,
-                    4, 5, 6, 6, 7, 4,
-                    8, 9, 10, 10, 11, 8,
-                    12, 13, 14, 14, 15, 12,
-                    16, 17, 18, 18, 19, 16,
-                    20, 21, 22, 22, 23, 20,
-            };
-
-            cube_mesh.
-                    vertex_buffer = new veekay::graphics::Buffer(
-                    vertices.size() * sizeof(Vertex), vertices.data(),
-                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-
-            cube_mesh.
-                    index_buffer = new veekay::graphics::Buffer(
-                    indices.size() * sizeof(uint32_t), indices.data(),
-                    VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-
-            cube_mesh.
-                    indices = uint32_t(indices.size());
-        }
-
-// NOTE: Add models to scene
-        {
-            models.
-                    emplace_back(Model{
-                                         .mesh = plane_mesh,
-                                         .transform = Transform{
-                                                 .position = {0.0f, 0.0f, 0.0}
-                                         },
-                                         .albedo_color = veekay::vec3{0.8f, 0.6f, 0.2f},
-                                         .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
-                                         .shininess= 0.5f,
-                                 }
-            );
-
-            models.
-                    emplace_back(Model{
-                                         .mesh = cube_mesh,
-                                         .transform = Transform{
-                                                 .position = {-2.0f, -0.6f, -1.5f},
-                                         },
-                                         .albedo_color = veekay::vec3{1.0f, 0.0f, 0.0f},
-                                         .texture_path = "sw.png"
-                                 }
-            );
-
-            models.
-                    emplace_back(Model{
-                                         .mesh = cube_mesh,
-                                         .transform = Transform{
-                                                 .position = {1.5f, -0.6f, -0.5f},
-                                         },
-                                         .albedo_color = veekay::vec3{0.0f, 1.0f, 0.0f},
-                                         .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
-                                         .shininess= 0.5f,
-                                 }
-            );
-
-            models.
-                    emplace_back(Model{
-                                         .mesh = cube_mesh,
-                                         .transform = Transform{
-                                                 .position = {0.0f, -3.6f, 1.0f},
-                                         },
-                                         .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
-                                 }
-            );
-
-            models.
-                    emplace_back(Model{
-                                         .mesh = cube_mesh,
-                                         .transform = Transform{
-                                                 .position = {8.5f, -0.6f, -0.5f},
-                                         },
-                                         .albedo_color = veekay::vec3{0.0f, 1.0f, 0.0f},
-                                 }
-            );
-
-            models.
-                    emplace_back(Model{
-                                         .mesh = cube_mesh,
-                                         .transform = Transform{
-                                                 .position = {8.0f, -3.6f, 1.0f},
-                                         },
-                                         .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
-
-                                 }
-            );
-
-
-            point_lights.
-                    emplace_back(PointLight{
-                                         .position = {0.0, 0.0, 0.0},
-                                         .color = {1.0, 1.0, 1.0},
-                                         .intensity = 10.0f,
-                                 }
-            );
-
-            spot_lights.
-                    emplace_back(SpotLight{
-                                         .position = {1.0, 1.0, 1.0},
-                                         .intensity = 20.0f,
-                                         .direction = {0.0, 0.0, 1.0},
-                                         .angle = 0.8660254,
-                                         .color = {1.0, 1.0, 1.0},
-                                 }
-            );
-        }
     }
 
 // NOTE: Destroy resources here, do not cause leaks in your program!
@@ -852,6 +853,11 @@ namespace {
         delete plane_mesh.index_buffer;
         delete plane_mesh.vertex_buffer;
 
+        textures.clear();
+
+        for (auto image : image_info){
+            vkDestroyImageView(device, image.imageView, nullptr);
+        }
 
         delete model_uniforms_buffer;
         delete scene_uniforms_buffer;
@@ -1068,7 +1074,7 @@ namespace {
                     pipeline_layout,
                     0,                    // set = 0 → UBO + SSBO
                     1,                    // count = 1
-                    &model.texture_descriptors_set,      // descriptor set #0
+                    &models[0].texture_descriptors_set,      // descriptor set #0
                     1,                    // dynamicOffsetCount = 1
                     &dynamicOffset        // pointer to 1 offset
             );
