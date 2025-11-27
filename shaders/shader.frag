@@ -46,6 +46,8 @@ layout(binding = 3, std430) readonly buffer SpotLights {
 };
 
 layout (binding = 4) uniform sampler2D albedo_texture;
+layout (binding = 5) uniform sampler2D specular_texture;
+layout (binding = 6) uniform sampler2D emissive_texture;
 
 void main() {
     vec3 normal = normalize(f_normal);
