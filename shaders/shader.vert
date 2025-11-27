@@ -23,6 +23,7 @@ layout (binding = 1, std140) uniform ModelUniforms {
 	float shininess;
 };
 
+
 void main() {
 	vec4 position = model * vec4(v_position, 1.0f);
     f_normal = normalize(mat3(model) * v_normal);

@@ -68,8 +68,8 @@ namespace {
         veekay::vec3 specular_color;
         float shininess;
         std::string texture_path_albedo = "./assets/lenna.png";
-        std::string texture_path_specular = "./assets/lenna.png";
-        std::string texture_path_emissive = "./assets/lenna.png";
+        std::string texture_path_specular = "./assets/white_circle.png";
+        std::string texture_path_emissive = "./assets/black.png";
         VkDescriptorSet texture_descriptors_set;
     };
 
@@ -327,7 +327,6 @@ namespace {
                                                  .position = {-2.0f, -0.6f, -1.5f},
                                          },
                                          .albedo_color = veekay::vec3{1.0f, 0.0f, 0.0f},
-                                         .texture_path_albedo = "./assets/sw.png"
                                  }
             );
 
@@ -340,7 +339,6 @@ namespace {
                                          .albedo_color = veekay::vec3{0.0f, 1.0f, 0.0f},
                                          .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
                                          .shininess= 0.5f,
-                                         .texture_path_albedo = "./assets/sw.png"
                                  }
             );
 
@@ -351,7 +349,6 @@ namespace {
                                                  .position = {0.0f, -3.6f, 1.0f},
                                          },
                                          .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
-                                         .texture_path_albedo = "./assets/sw.png"
                                  }
             );
 
@@ -362,7 +359,6 @@ namespace {
                                                  .position = {8.5f, -0.6f, -0.5f},
                                          },
                                          .albedo_color = veekay::vec3{0.0f, 1.0f, 0.0f},
-                                         .texture_path_albedo = "./assets/sw.png"
                                  }
             );
 
@@ -373,7 +369,6 @@ namespace {
                                                  .position = {8.0f, -3.6f, 1.0f},
                                          },
                                          .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
-                                         .texture_path_albedo = "./assets/sw.png"
 
                                  }
             );
@@ -783,50 +778,54 @@ namespace {
                     }
                     samplers.push_back(texture_sampler);
 
-                    uint32_t width, height;
-                    std::vector<uint8_t> pixels;
-
                     {
-                        lodepng::decode(pixels, width, height, m.texture_path_albedo);
-                        veekay::graphics::Texture *texture = new veekay::graphics::Texture(
-                                cmd, width, height, VK_FORMAT_R8G8B8A8_UNORM, pixels.data()
-                        );
-                        textures.push_back(texture);
+                        uint32_t width, height;
+                        std::vector<uint8_t> pixels_albedo;
+                        lodepng::decode(pixels_albedo, width, height, m.texture_path_albedo);
+
+                        veekay::graphics::Texture *texture_albedo =
+                                new veekay::graphics::Texture(cmd, width, height, VK_FORMAT_R8G8B8A8_UNORM, pixels_albedo.data());
+                        textures.push_back(texture_albedo);
+
                         image_albedo = {
                                 .sampler = texture_sampler,
-                                .imageView = texture->view,
+                                .imageView = texture_albedo->view,
                                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
                         };
                     }
 
                     {
-                        lodepng::decode(pixels, width, height, m.texture_path_specular);
-                        veekay::graphics::Texture *texture = new veekay::graphics::Texture(
-                                cmd, width, height, VK_FORMAT_R8G8B8A8_UNORM, pixels.data()
-                        );
-                        textures.push_back(texture);
+                        uint32_t width, height;
+                        std::vector<uint8_t> pixels_specular;
+                        lodepng::decode(pixels_specular, width, height, m.texture_path_specular);
+
+                        veekay::graphics::Texture *texture_specular =
+                                new veekay::graphics::Texture(cmd, width, height, VK_FORMAT_R8G8B8A8_UNORM, pixels_specular.data());
+                        textures.push_back(texture_specular);
+
                         image_specular = {
                                 .sampler = texture_sampler,
-                                .imageView = texture->view,
+                                .imageView = texture_specular->view,
                                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
                         };
                     }
 
                     {
-                        lodepng::decode(pixels, width, height, m.texture_path_emissive);
-                        veekay::graphics::Texture *texture = new veekay::graphics::Texture(
-                                cmd, width, height, VK_FORMAT_R8G8B8A8_UNORM, pixels.data()
-                        );
-                        textures.push_back(texture);
+                        uint32_t width, height;
+                        std::vector<uint8_t> pixels_emissive;
+                        lodepng::decode(pixels_emissive, width, height, m.texture_path_emissive);
+
+                        veekay::graphics::Texture *texture_emissive =
+                                new veekay::graphics::Texture(cmd, width, height, VK_FORMAT_R8G8B8A8_UNORM, pixels_emissive.data());
+                        textures.push_back(texture_emissive);
+
                         image_emissive = {
                                 .sampler = texture_sampler,
-                                .imageView = texture->view,
+                                .imageView = texture_emissive->view,
                                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
                         };
                     }
 
-
-                    // Создаем write descriptors - ВАЖНО: используем image_info.back() для последней добавленной текстуры
                     VkWriteDescriptorSet write_infos[] = {
                             {
                                     .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -888,9 +887,9 @@ namespace {
                             },
                     };
 
-                    vkUpdateDescriptorSets(device, sizeof(write_infos) / sizeof(write_infos[0]), write_infos, 0,
-                                           nullptr);
+                    vkUpdateDescriptorSets(device, sizeof(write_infos) / sizeof(write_infos[0]), write_infos, 0, nullptr);
                 }
+
             }
 
 

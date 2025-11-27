@@ -30,10 +30,10 @@ struct PointLight {
 };
 
 struct SpotLight {
-	vec3 position;
-	float intensity;
-	vec3 direction;
-	float angle;
+    vec3 position;
+    float intensity;
+    vec3 direction;
+    float angle;
     vec3 color;
 };
 
@@ -61,27 +61,37 @@ void main() {
     } else {
         my_fuv = f_uv+0.1;
     }
-
     vec4 texel = texture(albedo_texture, my_fuv);
+
+    vec3 spec_tex = texture(specular_texture, f_uv).rgb;
+    vec3 emissive_tex = texture(emissive_texture, f_uv).rgb;
+
     // ------------------------------
     // Солнечное освещение
     // ------------------------------
     vec3 sun_dir = normalize(sun_light_direction); // вектор *к сцене*
     float sun_diffuse_factor = max(dot(normal, sun_dir), 0.0);
-    vec3 sun_diffuse = sun_diffuse_factor * texel.rgb;
 
+    // diffuse
+    vec3 sun_diffuse = texel.rgb * sun_light_color * sun_diffuse_factor;
+
+    // specular
     vec3 sun_half = normalize(view_dir + sun_dir);
     float sun_spec_factor = max(dot(normal, sun_half), 0.0);
 
-    vec3 sun_specular = specular_color * pow(sun_spec_factor, shininess) * sun_diffuse_factor;
+    vec3 sun_specular =
+        spec_tex *
+        sun_light_color *
+        pow(sun_spec_factor, shininess) *
+        sun_diffuse;
 
-    vec3 sun_color = sun_light_color * (sun_diffuse + sun_specular);
+    vec3 sun_color = sun_diffuse + sun_specular;
 
     // ------------------------------
     // Точечные источники
     // ------------------------------
 
-    vec3 point_light_color = vec3(0.0, 0.0, 0.0);
+    vec3 point_light_color = vec3(0.0);
     for (uint i = 0; i < point_light_count; ++i) {
         PointLight light = point_lights[i];
 
@@ -89,39 +99,56 @@ void main() {
         float distance = length(light.position - f_position);
         float attenuation = light.intensity / (distance * distance);
 
-        // Рассеянное освещение
         float diffuse_factor = max(dot(normal, light_dir), 0.0);
-        vec3 diffuse = light.color * diffuse_factor * texel.rgb;
-
-        // Зеркальное освещение
-        vec3 half_vec = normalize(light_dir + view_dir);
-        float spec_factor = max(dot(normal, half_vec), 0.0);
-        vec3 specular = light.color * specular_color * pow(spec_factor, shininess);
-
-        point_light_color += attenuation * (diffuse + specular) * diffuse_factor;
-    }
-
-    vec3 spot_light_color = vec3(0.0, 0.0, 0.0);
-
-    for (uint i = 0; i < spot_light_count; ++i) {
-        SpotLight light = spot_lights[i];
-        vec3 light_dir = normalize(light.position - f_position);
-        float distance = length(light.position - f_position);
-        float attenuation = light.intensity / (distance * distance);
 
         // diffuse
-        float diffuse_factor = max(dot(normal, light_dir), 0.0);
-        vec3 diffuse = light.color * diffuse_factor * texel.rgb;
+        vec3 diffuse = texel.rgb * light.color * diffuse_factor;
 
         // specular
         vec3 half_vec = normalize(light_dir + view_dir);
         float spec_factor = max(dot(normal, half_vec), 0.0);
-        vec3 specular = light.color * specular_color * pow(spec_factor, shininess);
 
-        vec3 res_color = attenuation * (diffuse + specular) * diffuse_factor;
+        vec3 specular =
+            spec_tex *
+            light.color *
+            pow(spec_factor, shininess) *
+            diffuse_factor;
 
+        point_light_color += attenuation * (diffuse + specular);
+    }
+
+    // ------------------------------
+    // Прожекторы
+    // ------------------------------
+
+    vec3 spot_light_color = vec3(0.0);
+
+    for (uint i = 0; i < spot_light_count; ++i) {
+        SpotLight light = spot_lights[i];
+
+        vec3 light_dir = normalize(light.position - f_position);
+        float distance = length(light.position - f_position);
+        float attenuation = light.intensity / (distance * distance);
+
+        float diffuse_factor = max(dot(normal, light_dir), 0.0);
+
+        // diffuse
+        vec3 diffuse = texel.rgb * light.color * diffuse_factor;
+
+        // specular
+        vec3 half_vec = normalize(light_dir + view_dir);
+        float spec_factor = max(dot(normal, half_vec), 0.0);
+
+        vec3 specular =
+            spec_tex *
+            light.color *
+            pow(spec_factor, shininess) *
+            diffuse_factor;
+
+        vec3 lighting = attenuation * (diffuse + specular);
+
+        // угол прожектора
         float theta = dot(light_dir, normalize(light.direction));
-
         float outer_angle = light.angle;
         float inner_angle = light.angle * 0.9;
 
@@ -130,15 +157,18 @@ void main() {
             0.0, 1.0
         );
 
-        spot_light_color += res_color * spot_factor;
+        spot_light_color += lighting * spot_factor;
     }
 
+    // ------------------------------
+    // Финальный цвет
+    // ------------------------------
+    vec3 color =
+        ambient_light_intensity +
+        sun_color +
+        point_light_color +
+        spot_light_color +
+        emissive_tex;
 
-
-
-
-
-    vec3 color = sun_color + point_light_color + ambient_light_intensity + spot_light_color;
-
-    final_color = vec4(texel.rgb + color, 1.0);
+    final_color = vec4(color, texel.a);
 }
