@@ -51,12 +51,22 @@ void main() {
     vec3 normal = normalize(f_normal);
     vec3 view_dir = normalize(view_position - f_position);
 
+    vec2 my_fuv = f_uv;
+    float checker = mod(floor(f_uv.x * 10.0) + floor(f_uv.y * 10.0), 2.0);
+
+    if (checker == 0.0) {
+        my_fuv = f_uv;
+    } else {
+        my_fuv = f_uv+0.1;
+    }
+
+    vec4 texel = texture(albedo_texture, my_fuv);
     // ------------------------------
     // Солнечное освещение
     // ------------------------------
     vec3 sun_dir = normalize(sun_light_direction); // вектор *к сцене*
     float sun_diffuse_factor = max(dot(normal, sun_dir), 0.0);
-    vec3 sun_diffuse = albedo_color * sun_diffuse_factor;
+    vec3 sun_diffuse = sun_diffuse_factor * texel.rgb;
 
     vec3 sun_half = normalize(view_dir + sun_dir);
     float sun_spec_factor = max(dot(normal, sun_half), 0.0);
@@ -79,7 +89,7 @@ void main() {
 
         // Рассеянное освещение
         float diffuse_factor = max(dot(normal, light_dir), 0.0);
-        vec3 diffuse = light.color * diffuse_factor * albedo_color;
+        vec3 diffuse = light.color * diffuse_factor * texel.rgb;
 
         // Зеркальное освещение
         vec3 half_vec = normalize(light_dir + view_dir);
@@ -99,7 +109,7 @@ void main() {
 
         // diffuse
         float diffuse_factor = max(dot(normal, light_dir), 0.0);
-        vec3 diffuse = light.color * diffuse_factor * albedo_color;
+        vec3 diffuse = light.color * diffuse_factor * texel.rgb;
 
         // specular
         vec3 half_vec = normalize(light_dir + view_dir);
@@ -127,6 +137,6 @@ void main() {
 
 
     vec3 color = sun_color + point_light_color + ambient_light_intensity + spot_light_color;
-    vec4 texel = texture(albedo_texture, f_uv);
+
     final_color = vec4(texel.rgb + color, 1.0);
 }
