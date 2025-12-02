@@ -68,7 +68,7 @@ namespace {
         veekay::vec3 specular_color;
         float shininess;
         std::string texture_path_albedo = "./assets/lenna.png";
-        std::string texture_path_specular = "./assets/white_circle.png";
+        std::string texture_path_specular = "./assets/white.png";
         std::string texture_path_emissive = "./assets/black.png";
         VkDescriptorSet texture_descriptors_set;
     };
@@ -317,6 +317,7 @@ namespace {
                                          .albedo_color = veekay::vec3{0.8f, 0.6f, 0.2f},
                                          .specular_color = veekay::vec3{1.0f, 1.0f, 1.0f},
                                          .shininess= 0.5f,
+                                         .texture_path_albedo = "./assets/sw.png",
                                  }
             );
 
@@ -327,6 +328,7 @@ namespace {
                                                  .position = {-2.0f, -0.6f, -1.5f},
                                          },
                                          .albedo_color = veekay::vec3{1.0f, 0.0f, 0.0f},
+                                         .texture_path_specular = "./assets/white_circle.png"
                                  }
             );
 
@@ -369,14 +371,14 @@ namespace {
                                                  .position = {8.0f, -3.6f, 1.0f},
                                          },
                                          .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
-
+                                         .texture_path_emissive = "./assets/points.png"
                                  }
             );
 
 
             point_lights.
                     emplace_back(PointLight{
-                                         .position = {0.0, 0.0, 0.0},
+                                         .position = {-2.0, -3.0, -3.0},
                                          .color = {1.0, 1.0, 1.0},
                                          .intensity = 10.0f,
                                  }
@@ -391,7 +393,6 @@ namespace {
                                          .color = {1.0, 1.0, 1.0},
                                  }
             );
-
 
             VkDevice &device = veekay::app.vk_device;
             VkPhysicalDevice &physical_device = veekay::app.vk_physical_device;
@@ -933,7 +934,7 @@ namespace {
     }
 
     veekay::vec3 sun_dir = {0.0, -1.0, 0};
-    veekay::vec3 test_point_light_position = {0.0, -4.0, -1.0f};
+    veekay::vec3 test_point_light_position = {-2.0, -3.0, -3.0f};
 
     veekay::vec3 spot_light_pos = {10, -1, -5};
     veekay::vec3 spot_light_dir = {0.0, 0.0, -1.0};
