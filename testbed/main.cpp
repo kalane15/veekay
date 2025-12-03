@@ -351,6 +351,7 @@ namespace {
                                                  .position = {0.0f, -3.6f, 1.0f},
                                          },
                                          .albedo_color = veekay::vec3{0.0f, 0.0f, 1.0f},
+                                         .texture_path_albedo = "./assets/shashki.png"
                                  }
             );
 
@@ -361,6 +362,7 @@ namespace {
                                                  .position = {8.5f, -0.6f, -0.5f},
                                          },
                                          .albedo_color = veekay::vec3{0.0f, 1.0f, 0.0f},
+                                         .texture_path_albedo = "./assets/alastor.png"
                                  }
             );
 
